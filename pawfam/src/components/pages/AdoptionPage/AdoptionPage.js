@@ -1,0 +1,436 @@
+import React, { useState } from 'react';
+import { adoptionAPI } from '../../../services/api';
+import './AdoptionPage.css';
+
+const AdoptionPage = ({ user }) => {
+  const [selectedPet, setSelectedPet] = useState(null);
+  const [showAdoptionForm, setShowAdoptionForm] = useState(false);
+  const [adoptionData, setAdoptionData] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    address: '',
+    experience: '',
+    experienceDetails: '',
+    visitDate: '',
+    visitTime: '',
+    adoptionReason: '',
+    otherPets: '',
+    otherPetsDetails: ''
+  });
+  const [loading, setLoading] = useState(false);
+
+  // Mock data for pets available for adoption
+  const pets = [
+    {
+      id: 1,
+      name: 'Buddy',
+      type: 'Dog',
+      breed: 'Golden Retriever',
+      age: '2 years',
+      gender: 'Male',
+      size: 'Large',
+      description: 'Friendly and energetic golden retriever looking for a loving home. Great with kids and other pets.',
+      image: 'https://placehold.co/300x300/f59e0b/ffffff?text=Buddy',
+      status: 'Available',
+      shelter: 'Happy Paws Shelter'
+    },
+    {
+      id: 2,
+      name: 'Luna',
+      type: 'Cat',
+      breed: 'Siamese',
+      age: '1.5 years',
+      gender: 'Female',
+      size: 'Small',
+      description: 'Gentle and affectionate Siamese cat. Loves cuddles and quiet environments.',
+      image: 'https://placehold.co/300x300/3b82f6/ffffff?text=Luna',
+      status: 'Available',
+      shelter: 'Cat Rescue Center'
+    }
+  ];
+
+  const handleAdoptionSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!user) {
+      alert('Please login to submit an adoption application');
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      const applicationPayload = {
+        pet: {
+          id: selectedPet.id.toString(),
+          name: selectedPet.name,
+          type: selectedPet.type,
+          breed: selectedPet.breed,
+          age: selectedPet.age,
+          shelter: selectedPet.shelter
+        },
+        personalInfo: {
+          fullName: adoptionData.fullName,
+          email: adoptionData.email,
+          phone: adoptionData.phone,
+          address: adoptionData.address
+        },
+        experience: {
+          level: adoptionData.experience,
+          details: adoptionData.experienceDetails,
+          otherPets: adoptionData.otherPets,
+          otherPetsDetails: adoptionData.otherPetsDetails
+        },
+        visitSchedule: {
+          date: adoptionData.visitDate,
+          time: adoptionData.visitTime
+        },
+        adoptionReason: adoptionData.adoptionReason
+      };
+
+      await adoptionAPI.createApplication(applicationPayload);
+      
+      alert('Adoption application submitted successfully! We will contact you soon.');
+      setShowAdoptionForm(false);
+      setSelectedPet(null);
+      setAdoptionData({
+        fullName: '',
+        email: '',
+        phone: '',
+        address: '',
+        experience: '',
+        experienceDetails: '',
+        visitDate: '',
+        visitTime: '',
+        adoptionReason: '',
+        otherPets: '',
+        otherPetsDetails: ''
+      });
+    } catch (error) {
+      alert(error.response?.data?.message || 'Error submitting application');
+    }
+    
+    setLoading(false);
+  };
+
+  const handleMeetPet = (pet) => {
+    if (!user) {
+      alert('Please login to submit an adoption application');
+      return;
+    }
+    setSelectedPet(pet);
+    setShowAdoptionForm(true);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setAdoptionData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  return (
+    <div className="adoption-page">
+      <div className="adoption-header">
+        <h1>Find Your New Best Friend</h1>
+        <p>Give a loving home to pets in need of adoption</p>
+      </div>
+
+      {!user && (
+        <div className="login-prompt">
+          <p>Please <a href="#" onClick={() => window.location.reload()}>login</a> to submit adoption applications</p>
+        </div>
+      )}
+
+      <div className="adoption-filters">
+        <div className="filter-group">
+          <label>Type:</label>
+          <select>
+            <option value="all">All Pets</option>
+            <option value="dog">Dogs</option>
+            <option value="cat">Cats</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div className="filter-group">
+          <label>Size:</label>
+          <select>
+            <option value="all">All Sizes</option>
+            <option value="small">Small</option>
+            <option value="medium">Medium</option>
+            <option value="large">Large</option>
+          </select>
+        </div>
+        <div className="filter-group">
+          <label>Age:</label>
+          <select>
+            <option value="all">All Ages</option>
+            <option value="puppy">Puppy/Kitten</option>
+            <option value="young">Young</option>
+            <option value="adult">Adult</option>
+            <option value="senior">Senior</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="pets-grid">
+        {pets.map(pet => (
+          <div key={pet.id} className="pet-card">
+            <div className="pet-image">
+              <img src={pet.image} alt={pet.name} />
+              <div className="pet-status">{pet.status}</div>
+            </div>
+            <div className="pet-info">
+              <h3>{pet.name}</h3>
+              <div className="pet-details">
+                <div className="detail-item">
+                  <strong>Type:</strong> {pet.type}
+                </div>
+                <div className="detail-item">
+                  <strong>Breed:</strong> {pet.breed}
+                </div>
+                <div className="detail-item">
+                  <strong>Age:</strong> {pet.age}
+                </div>
+                <div className="detail-item">
+                  <strong>Gender:</strong> {pet.gender}
+                </div>
+                <div className="detail-item">
+                  <strong>Size:</strong> {pet.size}
+                </div>
+                <div className="detail-item">
+                  <strong>Shelter:</strong> {pet.shelter}
+                </div>
+              </div>
+              <p className="pet-description">{pet.description}</p>
+              <button 
+                className="meet-pet-btn"
+                onClick={() => handleMeetPet(pet)}
+                disabled={!user}
+              >
+                {user ? `Meet ${pet.name}` : 'Login to Adopt'}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Adoption Form Modal */}
+      {showAdoptionForm && selectedPet && (
+        <div className="adoption-modal">
+          <div className="adoption-form-container">
+            <div className="adoption-header">
+              <h2>Adopt {selectedPet.name}</h2>
+              <button 
+                className="close-btn"
+                onClick={() => setShowAdoptionForm(false)}
+                disabled={loading}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="pet-summary">
+              <img src={selectedPet.image} alt={selectedPet.name} />
+              <div className="pet-summary-info">
+                <h3>{selectedPet.name}</h3>
+                <p>{selectedPet.breed} • {selectedPet.age} • {selectedPet.gender}</p>
+                <p><strong>Shelter:</strong> {selectedPet.shelter}</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleAdoptionSubmit} className="adoption-form">
+              <div className="form-section">
+                <h3>Personal Information</h3>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Full Name *</label>
+                    <input
+                      type="text"
+                      name="fullName"
+                      value={adoptionData.fullName}
+                      onChange={handleInputChange}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Phone Number *</label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={adoptionData.phone}
+                      onChange={handleInputChange}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>Email Address *</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={adoptionData.email}
+                    onChange={handleInputChange}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Home Address *</label>
+                  <textarea
+                    name="address"
+                    value={adoptionData.address}
+                    onChange={handleInputChange}
+                    rows="3"
+                    required
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              <div className="form-section">
+                <h3>Pet Experience</h3>
+                <div className="form-group">
+                  <label>Do you have experience with pets? *</label>
+                  <select
+                    name="experience"
+                    value={adoptionData.experience}
+                    onChange={handleInputChange}
+                    required
+                    disabled={loading}
+                  >
+                    <option value="">Select Experience</option>
+                    <option value="first-time">First-time pet owner</option>
+                    <option value="some-experience">Some experience</option>
+                    <option value="experienced">Experienced pet owner</option>
+                    <option value="professional">Professional experience</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Tell us about your experience with pets</label>
+                  <textarea
+                    name="experienceDetails"
+                    value={adoptionData.experienceDetails}
+                    onChange={handleInputChange}
+                    rows="3"
+                    placeholder="Please share your experience with pets, if any..."
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              <div className="form-section">
+                <h3>Schedule a Visit</h3>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Preferred Visit Date *</label>
+                    <input
+                      type="date"
+                      name="visitDate"
+                      value={adoptionData.visitDate}
+                      onChange={handleInputChange}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Preferred Time *</label>
+                    <select
+                      name="visitTime"
+                      value={adoptionData.visitTime}
+                      onChange={handleInputChange}
+                      required
+                      disabled={loading}
+                    >
+                      <option value="">Select Time</option>
+                      <option value="09:00">9:00 AM</option>
+                      <option value="10:00">10:00 AM</option>
+                      <option value="11:00">11:00 AM</option>
+                      <option value="14:00">2:00 PM</option>
+                      <option value="15:00">3:00 PM</option>
+                      <option value="16:00">4:00 PM</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-section">
+                <h3>Additional Information</h3>
+                <div className="form-group">
+                  <label>Why do you want to adopt {selectedPet.name}?</label>
+                  <textarea
+                    name="adoptionReason"
+                    value={adoptionData.adoptionReason}
+                    onChange={handleInputChange}
+                    rows="3"
+                    placeholder="Please tell us why you're interested in adopting this pet..."
+                    disabled={loading}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Do you have other pets at home?</label>
+                  <select
+                    name="otherPets"
+                    value={adoptionData.otherPets}
+                    onChange={handleInputChange}
+                    disabled={loading}
+                  >
+                    <option value="">Select Option</option>
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                  </select>
+                </div>
+                {adoptionData.otherPets === 'yes' && (
+                  <div className="form-group">
+                    <label>Please describe your other pets</label>
+                    <textarea
+                      name="otherPetsDetails"
+                      value={adoptionData.otherPetsDetails}
+                      onChange={handleInputChange}
+                      rows="2"
+                      placeholder="Types, breeds, ages of your other pets..."
+                      disabled={loading}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="form-agreement">
+                <label className="checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    required 
+                    disabled={loading}
+                  />
+                  I understand that this is an adoption application and approval is subject to shelter review and home visit
+                </label>
+                <label className="checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    required 
+                    disabled={loading}
+                  />
+                  I agree to provide a loving and safe environment for the pet
+                </label>
+              </div>
+
+              <button 
+                type="submit" 
+                className="submit-application-btn"
+                disabled={loading}
+              >
+                {loading ? 'Submitting...' : 'Submit Adoption Application'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AdoptionPage;

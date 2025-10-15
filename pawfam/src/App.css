@@ -25,12 +25,12 @@ body {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  border: none;
 }
 
 .btn-primary {
   background-color: #3b82f6;
   color: white;
-  border: none;
 }
 
 .btn-primary:hover {
@@ -40,7 +40,6 @@ body {
 .btn-red {
   background-color: #ef4444;
   color: white;
-  border: none;
 }
 
 .btn-red:hover {
@@ -83,8 +82,4 @@ body {
   .md\:hidden {
     display: none;
   }
-}
-
-@media (min-width: 1024px) {
-  
 }

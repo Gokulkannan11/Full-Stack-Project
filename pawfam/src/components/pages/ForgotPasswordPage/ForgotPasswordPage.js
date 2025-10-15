@@ -1,15 +1,33 @@
 import React, { useState } from 'react';
 import Modal from '../../Modal/Modal';
+import { authAPI } from '../../../services/api';
 import './ForgotPasswordPage.css';
 
 const ForgotPasswordPage = ({ onNavigate }) => {
   const [email, setEmail] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalContent, setModalContent] = useState({ title: '', message: '' });
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(`Simulating password reset for email: ${email}`);
+    setLoading(true);
+    
+    try {
+      await authAPI.forgotPassword(email);
+      setModalContent({
+        title: 'Password Reset',
+        message: 'A password reset link has been sent to your email. Please check your inbox.'
+      });
+    } catch (error) {
+      setModalContent({
+        title: 'Error',
+        message: error.response?.data?.message || 'An error occurred while processing your request.'
+      });
+    }
+    
     setIsModalOpen(true);
+    setLoading(false);
   };
 
   return (
@@ -19,7 +37,7 @@ const ForgotPasswordPage = ({ onNavigate }) => {
         <p className="forgot-subtitle">
           Enter your email and we'll send you a link to reset your password.
         </p>
-        <form onSubmit={handleSubmit} className="forgot-form">
+        <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label" htmlFor="email">Email</label>
             <input
@@ -29,9 +47,16 @@ const ForgotPasswordPage = ({ onNavigate }) => {
               onChange={(e) => setEmail(e.target.value)}
               className="form-input"
               required
+              disabled={loading}
             />
           </div>
-          <button type="submit" className="btn btn-primary forgot-btn">Send Reset Link</button>
+          <button 
+            type="submit" 
+            className="btn btn-primary forgot-btn"
+            disabled={loading}
+          >
+            {loading ? 'Sending...' : 'Send Reset Link'}
+          </button>
         </form>
         <div className="forgot-link">
           <a href="#" onClick={() => onNavigate('login')} className="login-link">Back to Login</a>
@@ -40,8 +65,8 @@ const ForgotPasswordPage = ({ onNavigate }) => {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Password Reset"
-        message="A password reset link has been sent to your email. Please check your inbox."
+        title={modalContent.title}
+        message={modalContent.message}
       />
     </div>
   );

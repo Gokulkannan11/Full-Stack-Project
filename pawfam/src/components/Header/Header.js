@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import './Header.css';
 
-const Header = ({ onNavigate, isLoggedIn, onLogout }) => {
+const Header = ({ onNavigate, isLoggedIn, onLogout, user }) => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <header className="header">
       <nav className="header-nav container">
         <div className="logo-container" onClick={() => onNavigate('landing')}>
-          <span className="logo-text">PawFam🐾</span>
+          <span className="logo-text">PetFam</span>
         </div>
         <div className="mobile-menu-btn">
           <button onClick={() => setMenuOpen(!menuOpen)} className="menu-toggle">
@@ -19,12 +19,14 @@ const Header = ({ onNavigate, isLoggedIn, onLogout }) => {
         </div>
         <div className={`nav-links ${menuOpen ? 'nav-links-open' : ''}`}>
           <a href="#" className="nav-link" onClick={() => onNavigate('landing')}>Home</a>
-          <a href="#" className="nav-link" onClick={() => onNavigate('landing')}>Services</a>
-          <a href="#" className="nav-link" onClick={() => onNavigate('landing')}>Accessories</a>
-          <a href="#" className="nav-link" onClick={() => onNavigate('landing')}>Adoption</a>
-          <a href="#" className="nav-link" onClick={() => onNavigate('landing')}>Learn More</a>
+          <a href="#" className="nav-link" onClick={() => onNavigate('services')}>Services</a>
+          <a href="#" className="nav-link" onClick={() => onNavigate('accessories')}>Accessories</a>
+          <a href="#" className="nav-link" onClick={() => onNavigate('adoption')}>Adoption</a>
           {isLoggedIn ? (
-            <button onClick={onLogout} className="btn btn-red">Logout</button>
+            <div className="user-menu">
+              <span className="user-greeting">Hello, {user?.username}</span>
+              <button onClick={onLogout} className="btn btn-red">Logout</button>
+            </div>
           ) : (
             <button onClick={() => onNavigate('login')} className="btn btn-primary">Login</button>
           )}
