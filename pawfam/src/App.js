@@ -26,9 +26,9 @@ const App = () => {
       const token = localStorage.getItem('token');
       if (token) {
         try {
-          const response = await authAPI.getCurrentUser();
+          const data = await authAPI.getCurrentUser();
           setIsLoggedIn(true);
-          setUser(response.data.user);
+          setUser(data.user); // Changed from response.data.user to data.user
         } catch (error) {
           localStorage.removeItem('token');
           localStorage.removeItem('user');
@@ -45,38 +45,24 @@ const App = () => {
     setIsModalOpen(true);
   };
 
-  const handleLogin = async (email, password) => {
-    try {
-      const response = await authAPI.login({ email, password });
-      const { token, user } = response.data;
-      
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
-      
-      setIsLoggedIn(true);
-      setUser(user);
-      setCurrentPage('landing');
-      showModal('Login Successful', `Welcome back, ${user.username}!`);
-    } catch (error) {
-      showModal('Login Failed', error.response?.data?.message || 'An error occurred during login');
-    }
+  // FIXED: handleLogin now receives the response data from LoginPage
+  // It does NOT make another API call
+  const handleLogin = (data) => {
+    // data already contains token and user from the LoginPage API call
+    setIsLoggedIn(true);
+    setUser(data.user);
+    setCurrentPage('landing');
+    showModal('Login Successful', `Welcome back, ${data.user.username}!`);
   };
 
-  const handleSignup = async (username, email, password) => {
-    try {
-      const response = await authAPI.register({ username, email, password });
-      const { token, user } = response.data;
-      
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
-      
-      setIsLoggedIn(true);
-      setUser(user);
-      setCurrentPage('landing');
-      showModal('Signup Successful', `Welcome to PetFam, ${username}!`);
-    } catch (error) {
-      showModal('Signup Failed', error.response?.data?.message || 'An error occurred during signup');
-    }
+  // FIXED: handleSignup now receives the response data from SignUpPage
+  // It does NOT make another API call
+  const handleSignup = (data) => {
+    // data already contains token and user from the SignUpPage API call
+    setIsLoggedIn(true);
+    setUser(data.user);
+    setCurrentPage('landing');
+    showModal('Signup Successful', `Welcome to PetFam, ${data.user.username}!`);
   };
 
   const handleLogout = () => {

@@ -14,37 +14,168 @@ router.post('/applications', auth, async (req, res) => {
       adoptionReason
     } = req.body;
 
+    console.log('Request body:', req.body);
+
+    // Validate required fields
+    if (!pet || !personalInfo || !experience || !visitSchedule || !adoptionReason) {
+      return res.status(400).json({
+        message: 'Please provide all required fields (pet, personalInfo, experience, visitSchedule, adoptionReason)'
+      });
+    }
+
+    // Validate pet object structure
+    if (!pet.id || !pet.name || !pet.type || !pet.breed) {
+      return res.status(400).json({
+        message: 'Invalid pet information. Required: id, name, type, breed'
+      });
+    }
+
+    // Validate personalInfo structure
+    if (!personalInfo.fullName || !personalInfo.email || !personalInfo.phone || !personalInfo.address) {
+      return res.status(400).json({
+        message: 'Invalid personal information. Required: fullName, email, phone, address'
+      });
+    }
+
+    // Validate visitSchedule structure
+    if (!visitSchedule.date || !visitSchedule.time) {
+      return res.status(400).json({
+        message: 'Invalid visit schedule. Required: date, time'
+      });
+    }
+
+    // Create new application with the structure matching frontend
     const application = new AdoptionApplication({
       user: req.user._id,
-      pet,
-      personalInfo,
-      experience,
-      visitSchedule,
+      pet: {
+        id: pet.id,
+        name: pet.name,
+        type: pet.type,
+        breed: pet.breed,
+        age: pet.age || 'Unknown',
+        shelter: pet.shelter || 'Unknown'
+      },
+      personalInfo: {
+        fullName: personalInfo.fullName,
+        email: personalInfo.email,
+        phone: personalInfo.phone,
+        address: personalInfo.address
+      },
+      experience: {
+        level: experience.level,
+        details: experience.details || '',
+        otherPets: experience.otherPets || 'no',
+        otherPetsDetails: experience.otherPetsDetails || ''
+      },
+      visitSchedule: {
+        date: new Date(visitSchedule.date),
+        time: visitSchedule.time
+      },
       adoptionReason
     });
 
     await application.save();
 
+    console.log('Application created successfully:', application._id);
+
     res.status(201).json({
       message: 'Adoption application submitted successfully',
-      application
+      application: {
+        id: application._id,
+        pet: application.pet,
+        status: application.status,
+        createdAt: application.createdAt
+      }
     });
   } catch (error) {
     console.error('Application creation error:', error);
-    res.status(500).json({ message: 'Server error submitting application' });
+    res.status(500).json({ 
+      message: 'Server error while creating application',
+      error: error.message 
+    });
   }
 });
 
-// Get user's adoption applications
+// Get all applications for logged-in user
 router.get('/applications', auth, async (req, res) => {
   try {
     const applications = await AdoptionApplication.find({ user: req.user._id })
       .sort({ createdAt: -1 });
-    
-    res.json(applications);
+
+    res.json({
+      applications,
+      count: applications.length
+    });
   } catch (error) {
     console.error('Get applications error:', error);
-    res.status(500).json({ message: 'Server error fetching applications' });
+    res.status(500).json({ message: 'Server error while fetching applications' });
+  }
+});
+
+// Get single application by ID
+router.get('/applications/:id', auth, async (req, res) => {
+  try {
+    const application = await AdoptionApplication.findOne({
+      _id: req.params.id,
+      user: req.user._id
+    });
+
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+
+    res.json({ application });
+  } catch (error) {
+    console.error('Get application error:', error);
+    res.status(500).json({ message: 'Server error while fetching application' });
+  }
+});
+
+// Update application status (admin only - you can add admin middleware later)
+router.patch('/applications/:id/status', auth, async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    if (!['pending', 'under_review', 'approved', 'rejected', 'scheduled'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    const application = await AdoptionApplication.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    );
+
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+
+    res.json({
+      message: 'Application status updated',
+      application
+    });
+  } catch (error) {
+    console.error('Update status error:', error);
+    res.status(500).json({ message: 'Server error while updating status' });
+  }
+});
+
+// Delete application
+router.delete('/applications/:id', auth, async (req, res) => {
+  try {
+    const application = await AdoptionApplication.findOneAndDelete({
+      _id: req.params.id,
+      user: req.user._id
+    });
+
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+
+    res.json({ message: 'Application deleted successfully' });
+  } catch (error) {
+    console.error('Delete application error:', error);
+    res.status(500).json({ message: 'Server error while deleting application' });
   }
 });
 

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { authAPI } from '../../../services/api';
 import './SignUpPage.css';
 
 const SignUpPage = ({ onNavigate, onSignup }) => {
@@ -8,6 +9,9 @@ const SignUpPage = ({ onNavigate, onSignup }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  
+  // Prevent double submission
+  const isSubmitting = useRef(false);
 
   const validateForm = () => {
     const newErrors = {};
@@ -16,7 +20,7 @@ const SignUpPage = ({ onNavigate, onSignup }) => {
       newErrors.username = 'Username must be at least 3 characters';
     }
     
-    if (!email.includes('@')) {
+    if (!email.includes('@') || !email.includes('.')) {
       newErrors.email = 'Please enter a valid email address';
     }
     
@@ -35,13 +39,68 @@ const SignUpPage = ({ onNavigate, onSignup }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Prevent double submission
+    if (isSubmitting.current || loading) {
+      console.log('Already submitting, ignoring duplicate request...');
+      return;
+    }
+    
     if (!validateForm()) {
       return;
     }
     
+    isSubmitting.current = true;
     setLoading(true);
-    await onSignup(username, email, password);
-    setLoading(false);
+    setErrors({});
+
+    try {
+      console.log('Submitting registration...');
+      
+      // Single API call - authAPI.register now returns response.data directly
+      const data = await authAPI.register({ 
+        username, 
+        email, 
+        password 
+      });
+      
+      console.log('Registration successful:', data);
+      
+      // Store token and user info
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+      
+      // Show success message
+      alert('Account created successfully! Please login.');
+      
+      // Navigate to login page
+      if (onNavigate) {
+        onNavigate('login');
+      }
+      
+      // Optional: Call parent handler if provided
+      if (onSignup) {
+        onSignup(data);
+      }
+      
+    } catch (error) {
+      console.error('Signup error:', error);
+      
+      // Extract error message from response
+      const errorMessage = error.response?.data?.message 
+        || error.message 
+        || 'Signup failed. Please try again.';
+      
+      setErrors({ submit: errorMessage });
+      
+      // Show error to user
+      alert(errorMessage);
+      
+    } finally {
+      setLoading(false);
+      isSubmitting.current = false;
+    }
   };
 
   return (
@@ -59,9 +118,12 @@ const SignUpPage = ({ onNavigate, onSignup }) => {
               className={`form-input ${errors.username ? 'error' : ''}`}
               required
               disabled={loading}
+              placeholder="Enter your username"
+              autoComplete="username"
             />
             {errors.username && <span className="error-text">{errors.username}</span>}
           </div>
+          
           <div className="form-group">
             <label className="form-label" htmlFor="email">Email</label>
             <input
@@ -72,9 +134,12 @@ const SignUpPage = ({ onNavigate, onSignup }) => {
               className={`form-input ${errors.email ? 'error' : ''}`}
               required
               disabled={loading}
+              placeholder="Enter your email"
+              autoComplete="email"
             />
             {errors.email && <span className="error-text">{errors.email}</span>}
           </div>
+          
           <div className="form-group">
             <label className="form-label" htmlFor="password">Password</label>
             <input
@@ -85,9 +150,12 @@ const SignUpPage = ({ onNavigate, onSignup }) => {
               className={`form-input ${errors.password ? 'error' : ''}`}
               required
               disabled={loading}
+              placeholder="Enter your password"
+              autoComplete="new-password"
             />
             {errors.password && <span className="error-text">{errors.password}</span>}
           </div>
+          
           <div className="form-group">
             <label className="form-label" htmlFor="confirmPassword">Confirm Password</label>
             <input
@@ -98,9 +166,24 @@ const SignUpPage = ({ onNavigate, onSignup }) => {
               className={`form-input ${errors.confirmPassword ? 'error' : ''}`}
               required
               disabled={loading}
+              placeholder="Confirm your password"
+              autoComplete="new-password"
             />
             {errors.confirmPassword && <span className="error-text">{errors.confirmPassword}</span>}
           </div>
+          
+          {errors.submit && (
+            <div className="error-message submit-error" style={{
+              color: 'red',
+              marginBottom: '1rem',
+              padding: '0.5rem',
+              backgroundColor: '#fee',
+              borderRadius: '4px'
+            }}>
+              {errors.submit}
+            </div>
+          )}
+          
           <button 
             type="submit" 
             className="btn btn-primary signup-btn"
@@ -109,8 +192,23 @@ const SignUpPage = ({ onNavigate, onSignup }) => {
             {loading ? 'Creating Account...' : 'Sign Up'}
           </button>
         </form>
+        
         <div className="signup-link">
-          <p>Already have an account? <a href="#" onClick={() => onNavigate('login')} className="login-link">Login here</a></p>
+          <p>
+            Already have an account?{' '}
+            <a 
+              href="#" 
+              onClick={(e) => { 
+                e.preventDefault(); 
+                if (!loading) {
+                  onNavigate('login');
+                }
+              }} 
+              className="login-link"
+            >
+              Login here
+            </a>
+          </p>
         </div>
       </div>
     </div>

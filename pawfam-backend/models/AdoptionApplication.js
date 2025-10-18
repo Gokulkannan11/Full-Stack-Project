@@ -1,36 +1,45 @@
 const mongoose = require('mongoose');
 
-const AdoptionApplicationSchema = new mongoose.Schema({
+const adoptionApplicationSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
+  // Store complete pet information as an embedded object
   pet: {
-    id: String,
-    name: String,
-    type: String,
-    breed: String,
-    age: String,
-    shelter: String
+    id: { type: String, required: true },
+    name: { type: String, required: true },
+    type: { type: String, required: true },
+    breed: { type: String, required: true },
+    age: { type: String, required: true },
+    shelter: { type: String, required: true }
   },
+  // Personal information object (matches frontend structure)
   personalInfo: {
-    fullName: String,
-    email: String,
-    phone: String,
-    address: String
+    fullName: { type: String, required: true },
+    email: { type: String, required: true },
+    phone: { type: String, required: true },
+    address: { type: String, required: true }
   },
+  // Experience information
   experience: {
-    level: String,
-    details: String,
-    otherPets: String,
-    otherPetsDetails: String
+    level: { type: String, required: true },
+    details: { type: String },
+    otherPets: { type: String },
+    otherPetsDetails: { type: String }
   },
+  // Visit schedule
   visitSchedule: {
-    date: Date,
-    time: String
+    date: { type: Date, required: true },
+    time: { type: String, required: true }
   },
-  adoptionReason: String,
+  // Adoption reason
+  adoptionReason: {
+    type: String,
+    required: true
+  },
+  // Application status
   status: {
     type: String,
     enum: ['pending', 'under_review', 'approved', 'rejected', 'scheduled'],
@@ -40,4 +49,4 @@ const AdoptionApplicationSchema = new mongoose.Schema({
   timestamps: true
 });
 
-module.exports = mongoose.model('AdoptionApplication', AdoptionApplicationSchema);
+module.exports = mongoose.model('AdoptionApplication', adoptionApplicationSchema);

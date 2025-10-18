@@ -2,6 +2,9 @@ import axios from 'axios';
 
 const API = axios.create({
   baseURL: 'http://localhost:5000/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 // Add token to requests
@@ -26,26 +29,60 @@ API.interceptors.response.use(
   }
 );
 
+// Auth API - Return response.data directly
 export const authAPI = {
-  register: (userData) => API.post('/auth/register', userData),
-  login: (credentials) => API.post('/auth/login', credentials),
-  forgotPassword: (email) => API.post('/auth/forgot-password', { email }),
-  getCurrentUser: () => API.get('/auth/me'),
+  register: async (userData) => {
+    const response = await API.post('/auth/register', userData);
+    return response.data;
+  },
+  login: async (credentials) => {
+    const response = await API.post('/auth/login', credentials);
+    return response.data;
+  },
+  forgotPassword: async (email) => {
+    const response = await API.post('/auth/forgot-password', { email });
+    return response.data;
+  },
+  getCurrentUser: async () => {
+    const response = await API.get('/auth/me');
+    return response.data;
+  },
 };
 
+// Daycare API
 export const daycareAPI = {
-  createBooking: (bookingData) => API.post('/daycare/bookings', bookingData),
-  getBookings: () => API.get('/daycare/bookings'),
+  createBooking: async (bookingData) => {
+    const response = await API.post('/daycare/bookings', bookingData);
+    return response.data;
+  },
+  getBookings: async () => {
+    const response = await API.get('/daycare/bookings');
+    return response.data;
+  },
 };
 
+// Products API
 export const productsAPI = {
-  createOrder: (orderData) => API.post('/products/orders', orderData),
-  getOrders: () => API.get('/products/orders'),
+  createOrder: async (orderData) => {
+    const response = await API.post('/products/orders', orderData);
+    return response.data;
+  },
+  getOrders: async () => {
+    const response = await API.get('/products/orders');
+    return response.data;
+  },
 };
 
+// Adoption API
 export const adoptionAPI = {
-  createApplication: (applicationData) => API.post('/adoption/applications', applicationData),
-  getApplications: () => API.get('/adoption/applications'),
+  createApplication: async (applicationData) => {
+    const response = await API.post('/adoption/applications', applicationData);
+    return response.data;
+  },
+  getApplications: async () => {
+    const response = await API.get('/adoption/applications');
+    return response.data;
+  },
 };
 
 export default API;

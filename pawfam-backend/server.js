@@ -32,8 +32,8 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Something went wrong!' });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
+// 404 handler - FIXED: Removed the '*' parameter
+app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
