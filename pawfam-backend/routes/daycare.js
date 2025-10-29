@@ -58,9 +58,9 @@ router.post('/bookings', auth, async (req, res) => {
     });
   } catch (error) {
     console.error('Booking creation error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Server error creating booking',
-      error: error.message 
+      error: error.message
     });
   }
 });
@@ -68,16 +68,34 @@ router.post('/bookings', auth, async (req, res) => {
 // Get user's daycare bookings
 router.get('/bookings', auth, async (req, res) => {
   try {
-    const bookings = await DaycareBooking.find({ user: req.user._id })
+    const { search } = req.query;
+
+    let query = { user: req.user._id };
+
+    // If search keyword is provided, add search criteria
+    if (search && search.trim()) {
+      const searchRegex = new RegExp(search.trim(), 'i');
+
+      query.$or = [
+        { petName: searchRegex },
+        { petType: searchRegex },
+        { 'daycareCenter.name': searchRegex },
+        { 'daycareCenter.location': searchRegex },
+        { specialInstructions: searchRegex },
+        { status: searchRegex }
+      ];
+    }
+
+    const bookings = await DaycareBooking.find(query)
       .sort({ createdAt: -1 })
-      .lean(); // Use lean() for better performance
-    
+      .lean();
+
     res.json(bookings);
   } catch (error) {
     console.error('Get bookings error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Server error fetching bookings',
-      error: error.message 
+      error: error.message
     });
   }
 });
@@ -97,9 +115,71 @@ router.get('/bookings/:id', auth, async (req, res) => {
     res.json({ booking });
   } catch (error) {
     console.error('Get booking error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Server error fetching booking',
-      error: error.message 
+      error: error.message
+    });
+  }
+});
+
+// UPDATE BOOKING - NEW ENDPOINT
+router.put('/bookings/:id', auth, async (req, res) => {
+  try {
+    const {
+      petName,
+      petType,
+      petAge,
+      startDate,
+      endDate,
+      specialInstructions
+    } = req.body;
+
+    // Find booking
+    const booking = await DaycareBooking.findOne({
+      _id: req.params.id,
+      user: req.user._id
+    });
+
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    // Check if booking can be edited
+    if (booking.status === 'completed' || booking.status === 'cancelled') {
+      return res.status(400).json({
+        message: 'Cannot edit a booking that is completed or cancelled'
+      });
+    }
+
+    // Calculate new total amount if dates changed
+    let totalAmount = booking.totalAmount;
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+      totalAmount = days * booking.daycareCenter.pricePerDay;
+    }
+
+    // Update booking fields
+    if (petName) booking.petName = petName;
+    if (petType) booking.petType = petType;
+    if (petAge) booking.petAge = petAge;
+    if (startDate) booking.startDate = new Date(startDate);
+    if (endDate) booking.endDate = new Date(endDate);
+    if (specialInstructions !== undefined) booking.specialInstructions = specialInstructions;
+    booking.totalAmount = totalAmount;
+
+    await booking.save();
+
+    res.json({
+      message: 'Booking updated successfully',
+      booking
+    });
+  } catch (error) {
+    console.error('Update booking error:', error);
+    res.status(500).json({
+      message: 'Server error updating booking',
+      error: error.message
     });
   }
 });
@@ -129,14 +209,14 @@ router.patch('/bookings/:id/status', auth, async (req, res) => {
     });
   } catch (error) {
     console.error('Update status error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Server error updating status',
-      error: error.message 
+      error: error.message
     });
   }
 });
 
-// Cancel booking
+// Cancel booking (Revoke)
 router.patch('/bookings/:id/cancel', auth, async (req, res) => {
   try {
     const booking = await DaycareBooking.findOne({
@@ -149,8 +229,8 @@ router.patch('/bookings/:id/cancel', auth, async (req, res) => {
     }
 
     if (booking.status === 'completed' || booking.status === 'cancelled') {
-      return res.status(400).json({ 
-        message: 'Cannot cancel a booking that is already completed or cancelled' 
+      return res.status(400).json({
+        message: 'Cannot cancel a booking that is already completed or cancelled'
       });
     }
 
@@ -163,17 +243,17 @@ router.patch('/bookings/:id/cancel', auth, async (req, res) => {
     });
   } catch (error) {
     console.error('Cancel booking error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Server error cancelling booking',
-      error: error.message 
+      error: error.message
     });
   }
 });
 
-// Delete booking
+// Delete booking - UPDATED to handle cancelled status
 router.delete('/bookings/:id', auth, async (req, res) => {
   try {
-    const booking = await DaycareBooking.findOneAndDelete({
+    const booking = await DaycareBooking.findOne({
       _id: req.params.id,
       user: req.user._id
     });
@@ -182,7 +262,10 @@ router.delete('/bookings/:id', auth, async (req, res) => {
       return res.status(404).json({ message: 'Booking not found' });
     }
 
-    res.json({ 
+    // Delete the booking
+    await DaycareBooking.findByIdAndDelete(req.params.id);
+
+    res.json({
       message: 'Booking deleted successfully',
       deletedBooking: {
         id: booking._id,
@@ -191,9 +274,9 @@ router.delete('/bookings/:id', auth, async (req, res) => {
     });
   } catch (error) {
     console.error('Delete booking error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Server error deleting booking',
-      error: error.message 
+      error: error.message
     });
   }
 });

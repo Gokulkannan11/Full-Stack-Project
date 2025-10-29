@@ -2,14 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { daycareAPI, productsAPI, adoptionAPI } from '../../../services/api';
 import './BookingsPage.css';
 
-// Save this file as: pawfam/src/components/pages/BookingsPage/BookingsPage.js
-
 const BookingsPage = ({ user }) => {
   const [activeTab, setActiveTab] = useState('daycare');
   const [daycareBookings, setDaycareBookings] = useState([]);
   const [productOrders, setProductOrders] = useState([]);
   const [adoptionApplications, setAdoptionApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [sortBy, setSortBy] = useState('createdAt-desc');
+  const [accessoriesSortBy, setAccessoriesSortBy] = useState('createdAt-desc');
+  
+  // Edit modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingBooking, setEditingBooking] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    petName: '',
+    petType: '',
+    petAge: '',
+    startDate: '',
+    endDate: '',
+    specialInstructions: ''
+  });
 
   useEffect(() => {
     if (user) {
@@ -17,34 +31,90 @@ const BookingsPage = ({ user }) => {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (user && activeTab === 'daycare') {
+      const delayDebounce = setTimeout(() => {
+        handleDaycareSearch();
+      }, 500);
+      return () => clearTimeout(delayDebounce);
+    }
+  }, [searchKeyword, user]);
+
+  const handleDaycareSearch = async () => {
+    try {
+      setIsSearching(true);
+      const daycareData = await daycareAPI.getBookings(searchKeyword);
+      const sortedData = sortBookings(Array.isArray(daycareData) ? daycareData : [], sortBy);
+      setDaycareBookings(sortedData);
+    } catch (error) {
+      console.error('Error searching daycare bookings:', error);
+      setDaycareBookings([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const sortBookings = (bookings, sortOption) => {
+    const sorted = [...bookings];
+    switch (sortOption) {
+      case 'totalAmount-asc':
+        return sorted.sort((a, b) => a.totalAmount - b.totalAmount);
+      case 'totalAmount-desc':
+        return sorted.sort((a, b) => b.totalAmount - a.totalAmount);
+      case 'createdAt-asc':
+        return sorted.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      case 'createdAt-desc':
+        return sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      default:
+        return sorted;
+    }
+  };
+
+  const handleSortChange = (e) => {
+    const newSortBy = e.target.value;
+    setSortBy(newSortBy);
+    const sortedData = sortBookings(daycareBookings, newSortBy);
+    setDaycareBookings(sortedData);
+  };
+
+  const handleAccessoriesSortChange = (e) => {
+    const newSortBy = e.target.value;
+    setAccessoriesSortBy(newSortBy);
+    const sortedData = sortBookings(productOrders, newSortBy);
+    setProductOrders(sortedData);
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchKeyword(e.target.value);
+  };
+
+  const clearSearch = () => {
+    setSearchKeyword('');
+  };
+
   const fetchAllBookings = async () => {
     try {
       setLoading(true);
-      
-      // Fetch daycare bookings
+
       try {
-        const daycareData = await daycareAPI.getBookings();
-        console.log('Daycare bookings:', daycareData);
+        const daycareData = await daycareAPI.getBookings(searchKeyword);
         setDaycareBookings(Array.isArray(daycareData) ? daycareData : []);
       } catch (error) {
         console.error('Error fetching daycare bookings:', error);
         setDaycareBookings([]);
       }
 
-      // Fetch product orders
       try {
         const productsData = await productsAPI.getOrders();
-        console.log('Product orders:', productsData);
-        setProductOrders(Array.isArray(productsData) ? productsData : []);
+        const sortedProducts = sortBookings(Array.isArray(productsData) ? productsData : [], accessoriesSortBy);
+        setProductOrders(sortedProducts);
       } catch (error) {
         console.error('Error fetching product orders:', error);
         setProductOrders([]);
       }
 
-      // Fetch adoption applications
       try {
         const adoptionData = await adoptionAPI.getApplications();
-        console.log('Adoption applications:', adoptionData);
         setAdoptionApplications(adoptionData.applications || []);
       } catch (error) {
         console.error('Error fetching adoption applications:', error);
@@ -52,6 +122,90 @@ const BookingsPage = ({ user }) => {
       }
     } catch (error) {
       console.error('Error fetching bookings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle Revoke (Cancel) Booking
+  const handleRevokeBooking = async (bookingId) => {
+    if (!window.confirm('Are you sure you want to cancel this booking?')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await daycareAPI.cancelBooking(bookingId);
+      alert('Booking cancelled successfully!');
+      await fetchAllBookings();
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
+      alert(error.response?.data?.message || 'Failed to cancel booking');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle Edit Booking
+  const handleEditBooking = (booking) => {
+    setEditingBooking(booking);
+    setEditFormData({
+      petName: booking.petName,
+      petType: booking.petType,
+      petAge: booking.petAge,
+      startDate: new Date(booking.startDate).toISOString().split('T')[0],
+      endDate: new Date(booking.endDate).toISOString().split('T')[0],
+      specialInstructions: booking.specialInstructions || ''
+    });
+    setShowEditModal(true);
+  };
+
+  const handleEditFormChange = (e) => {
+    const { name, value } = e.target;
+    setEditFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleEditFormSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      setLoading(true);
+      await daycareAPI.updateBooking(editingBooking._id, editFormData);
+      alert('Booking updated successfully!');
+      setShowEditModal(false);
+      setEditingBooking(null);
+      await fetchAllBookings();
+    } catch (error) {
+      console.error('Error updating booking:', error);
+      alert(error.response?.data?.message || 'Failed to update booking');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle Delete Booking - First cancel, then delete
+  const handleDeleteBooking = async (bookingId) => {
+    if (!window.confirm('Are you sure you want to delete this booking? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // First, cancel the booking (change status to cancelled)
+      await daycareAPI.cancelBooking(bookingId);
+      
+      // Then, delete it from the database
+      await daycareAPI.deleteBooking(bookingId);
+      
+      alert('Booking deleted successfully!');
+      await fetchAllBookings();
+    } catch (error) {
+      console.error('Error deleting booking:', error);
+      alert(error.response?.data?.message || 'Failed to delete booking');
     } finally {
       setLoading(false);
     }
@@ -101,7 +255,7 @@ const BookingsPage = ({ user }) => {
       <div className="bookings-container">
         <div className="bookings-header-section">
           <h1 className="bookings-title">My Bookings</h1>
-          <button 
+          <button
             className="refresh-btn"
             onClick={fetchAllBookings}
             disabled={loading}
@@ -138,15 +292,73 @@ const BookingsPage = ({ user }) => {
           <div className="loading-spinner">Loading bookings...</div>
         ) : (
           <div className="bookings-content">
-            {/* Daycare Bookings Tab */}
             {activeTab === 'daycare' && (
               <div className="bookings-list">
+                <div className="search-bar-container">
+                  <div className="search-sort-container">
+                    <div className="search-input-wrapper">
+                      <input
+                        type="text"
+                        className="search-input"
+                        placeholder="Search by pet name, type, center, location, status..."
+                        value={searchKeyword}
+                        onChange={handleSearchChange}
+                      />
+                      {searchKeyword && (
+                        <button
+                          className="clear-search-btn"
+                          onClick={clearSearch}
+                          title="Clear search"
+                        >
+                          ✕
+                        </button>
+                      )}
+                      {isSearching && (
+                        <span className="search-loading">🔍</span>
+                      )}
+                    </div>
+
+                    <div className="sort-controls">
+                      <label className="sort-label">Sort by:</label>
+                      <select
+                        className="sort-select"
+                        value={sortBy}
+                        onChange={handleSortChange}
+                      >
+                        <option value="createdAt-desc">Newest First</option>
+                        <option value="createdAt-asc">Oldest First</option>
+                        <option value="totalAmount-desc">Amount: High to Low</option>
+                        <option value="totalAmount-asc">Amount: Low to High</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {searchKeyword && (
+                    <div className="search-results-info">
+                      Found {daycareBookings.length} result{daycareBookings.length !== 1 ? 's' : ''}
+                      {searchKeyword && ` for "${searchKeyword}"`}
+                    </div>
+                  )}
+                </div>
+
                 {daycareBookings.length === 0 ? (
                   <div className="no-bookings">
                     <div className="no-bookings-icon">📅</div>
-                    <h3>No Daycare Bookings Yet</h3>
-                    <p>You haven't made any daycare bookings yet.</p>
-                    <p>Visit the Centers page to book a daycare service for your pet.</p>
+                    {searchKeyword ? (
+                      <>
+                        <h3>No Results Found</h3>
+                        <p>No daycare bookings match your search "{searchKeyword}".</p>
+                        <button className="clear-search-btn-inline" onClick={clearSearch}>
+                          Clear Search
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <h3>No Daycare Bookings Yet</h3>
+                        <p>You haven't made any daycare bookings yet.</p>
+                        <p>Visit the Centers page to book a daycare service for your pet.</p>
+                      </>
+                    )}
                   </div>
                 ) : (
                   daycareBookings.map((booking) => (
@@ -193,17 +405,65 @@ const BookingsPage = ({ user }) => {
                           <span className="detail-value">{formatDate(booking.createdAt)}</span>
                         </div>
                       </div>
+                      
+                      {/* Action Buttons */}
+                      <div className="booking-actions">
+                        {booking.status !== 'cancelled' && booking.status !== 'completed' && (
+                          <>
+                            <button
+                              className="btn btn-primary btn-small"
+                              onClick={() => handleEditBooking(booking)}
+                              disabled={loading}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="btn btn-secondary btn-small"
+                              onClick={() => handleRevokeBooking(booking._id)}
+                              disabled={loading}
+                            >
+                              Revoke
+                            </button>
+                          </>
+                        )}
+                        <button
+                          className="btn btn-danger btn-small"
+                          onClick={() => handleDeleteBooking(booking._id)}
+                          disabled={loading}
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   ))
                 )}
               </div>
             )}
 
-            {/* Accessories Orders Tab */}
             {activeTab === 'accessories' && (
               <div className="bookings-list">
+                {productOrders.length > 0 && (
+                  <div className="search-bar-container">
+                    <div className="sort-controls">
+                      <label className="sort-label">Sort by:</label>
+                      <select
+                        className="sort-select"
+                        value={accessoriesSortBy}
+                        onChange={handleAccessoriesSortChange}
+                      >
+                        <option value="createdAt-desc">Newest First</option>
+                        <option value="createdAt-asc">Oldest First</option>
+                        <option value="totalAmount-desc">Amount: High to Low</option>
+                        <option value="totalAmount-asc">Amount: Low to High</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+
                 {productOrders.length === 0 ? (
                   <div className="no-bookings">
+                    <div className="no-bookings-icon">🛍️</div>
+                    <h3>No Accessory Orders Yet</h3>
                     <p>You haven't placed any accessory orders yet.</p>
                   </div>
                 ) : (
@@ -251,7 +511,6 @@ const BookingsPage = ({ user }) => {
               </div>
             )}
 
-            {/* Adoption Applications Tab */}
             {activeTab === 'adoption' && (
               <div className="bookings-list">
                 {adoptionApplications.length === 0 ? (
@@ -322,6 +581,131 @@ const BookingsPage = ({ user }) => {
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Edit Modal */}
+        {showEditModal && editingBooking && (
+          <div className="modal-overlay">
+            <div className="edit-modal">
+              <div className="modal-header">
+                <h2>Edit Booking</h2>
+                <button
+                  className="close-btn"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingBooking(null);
+                  }}
+                  disabled={loading}
+                >
+                  ×
+                </button>
+              </div>
+              <form onSubmit={handleEditFormSubmit} className="edit-form">
+                <div className="form-group">
+                  <label>Pet Name *</label>
+                  <input
+                    type="text"
+                    name="petName"
+                    value={editFormData.petName}
+                    onChange={handleEditFormChange}
+                    required
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Pet Type *</label>
+                    <select
+                      name="petType"
+                      value={editFormData.petType}
+                      onChange={handleEditFormChange}
+                      required
+                      disabled={loading}
+                    >
+                      <option value="">Select Type</option>
+                      <option value="Dog">Dog</option>
+                      <option value="Cat">Cat</option>
+                      <option value="Bird">Bird</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Pet Age *</label>
+                    <input
+                      type="number"
+                      name="petAge"
+                      value={editFormData.petAge}
+                      onChange={handleEditFormChange}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Start Date *</label>
+                    <input
+                      type="date"
+                      name="startDate"
+                      value={editFormData.startDate}
+                      onChange={handleEditFormChange}
+                      required
+                      disabled={loading}
+                      min={new Date().toISOString().split('T')[0]}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>End Date *</label>
+                    <input
+                      type="date"
+                      name="endDate"
+                      value={editFormData.endDate}
+                      onChange={handleEditFormChange}
+                      required
+                      disabled={loading}
+                      min={editFormData.startDate || new Date().toISOString().split('T')[0]}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>Special Instructions</label>
+                  <textarea
+                    name="specialInstructions"
+                    value={editFormData.specialInstructions}
+                    onChange={handleEditFormChange}
+                    rows="3"
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="form-actions">
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={loading}
+                  >
+                    {loading ? 'Updating...' : 'Update Booking'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setEditingBooking(null);
+                    }}
+                    disabled={loading}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
       </div>

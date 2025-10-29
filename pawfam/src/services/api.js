@@ -29,7 +29,7 @@ API.interceptors.response.use(
   }
 );
 
-// Auth API - Return response.data directly
+// Auth API
 export const authAPI = {
   register: async (userData) => {
     const response = await API.post('/auth/register', userData);
@@ -57,14 +57,27 @@ export const authAPI = {
   },
 };
 
-// Daycare API
+// Daycare API - UPDATED with new endpoints
 export const daycareAPI = {
   createBooking: async (bookingData) => {
     const response = await API.post('/daycare/bookings', bookingData);
     return response.data;
   },
-  getBookings: async () => {
-    const response = await API.get('/daycare/bookings');
+  getBookings: async (searchKeyword = '') => {
+    const params = searchKeyword ? { search: searchKeyword } : {};
+    const response = await API.get('/daycare/bookings', { params });
+    return response.data;
+  },
+  updateBooking: async (bookingId, bookingData) => {
+    const response = await API.put(`/daycare/bookings/${bookingId}`, bookingData);
+    return response.data;
+  },
+  cancelBooking: async (bookingId) => {
+    const response = await API.patch(`/daycare/bookings/${bookingId}/cancel`);
+    return response.data;
+  },
+  deleteBooking: async (bookingId) => {
+    const response = await API.delete(`/daycare/bookings/${bookingId}`);
     return response.data;
   },
 };
