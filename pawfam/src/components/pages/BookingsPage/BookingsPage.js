@@ -106,7 +106,7 @@ const BookingsPage = ({ user }) => {
             onClick={fetchAllBookings}
             disabled={loading}
           >
-            {loading ? 'Loading...' : '🔄 Refresh'}
+            {loading ? 'Loading...' : 'Refresh'}
           </button>
         </div>
 
