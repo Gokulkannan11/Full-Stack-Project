@@ -1,6 +1,6 @@
 .profile-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-color: #f9fafb;
   padding: 2rem 1rem;
 }
 
@@ -8,33 +8,36 @@
   max-width: 900px;
   margin: 0 auto;
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  border-radius: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   padding: 2rem;
 }
 
 .profile-title {
   text-align: center;
-  color: #764ba2;
+  color: #1e40af;
   margin-bottom: 2rem;
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: 2.5rem;
+  font-weight: 800;
 }
 
 .profile-info-section,
 .profile-details-section {
   margin-bottom: 2rem;
   padding: 1.5rem;
-  background: #f9f9f9;
-  border-radius: 8px;
+  background: #dbeafe;
+  border-radius: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .profile-info-section h2,
 .profile-details-section h2 {
-  color: #333;
+  color: #1f2937;
   margin-bottom: 1rem;
   font-size: 1.5rem;
-  font-weight: 600;
+  font-weight: 700;
+  border-bottom: 2px solid #3b82f6;
+  padding-bottom: 0.5rem;
 }
 
 .section-header {
@@ -47,13 +50,13 @@
 }
 
 .account-info p {
-  margin: 0.5rem 0;
-  color: #555;
+  margin: 0.75rem 0;
+  color: #4b5563;
   font-size: 1rem;
 }
 
 .account-info strong {
-  color: #333;
+  color: #1f2937;
   display: inline-block;
   min-width: 100px;
 }
@@ -70,7 +73,7 @@
 }
 
 .no-profile p {
-  color: #666;
+  color: #4b5563;
   margin-bottom: 1.5rem;
   font-size: 1.1rem;
 }
@@ -86,8 +89,8 @@
 .form-group label {
   display: block;
   margin-bottom: 0.5rem;
-  color: #333;
-  font-weight: 500;
+  color: #374151;
+  font-weight: 600;
   font-size: 0.95rem;
 }
 
@@ -96,8 +99,8 @@
 .form-group textarea {
   width: 100%;
   padding: 0.75rem;
-  border: 2px solid #ddd;
-  border-radius: 8px;
+  border: 2px solid #d1d5db;
+  border-radius: 0.5rem;
   font-size: 1rem;
   transition: all 0.3s ease;
   box-sizing: border-box;
@@ -107,8 +110,8 @@
 .form-group input:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #764ba2;
-  box-shadow: 0 0 0 3px rgba(118, 75, 162, 0.1);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .form-group input.error,
@@ -126,7 +129,7 @@
   display: flex;
   align-items: center;
   cursor: pointer;
-  color: #555;
+  color: #4b5563;
   font-weight: normal;
 }
 
@@ -158,11 +161,12 @@
 .btn {
   padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 9999px;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .btn:disabled {
@@ -171,13 +175,13 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-color: #3b82f6;
   color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 20px rgba(118, 75, 162, 0.4);
+  background-color: #2563eb;
+  transform: scale(1.05);
 }
 
 .btn-secondary {
@@ -210,23 +214,25 @@
 .detail-item {
   display: flex;
   padding: 1rem;
-  border-bottom: 1px solid #e0e0e0;
+  background: #f3f4f6;
+  border-radius: 0.5rem;
+  margin-bottom: 0.75rem;
   flex-wrap: wrap;
   gap: 0.5rem;
 }
 
 .detail-item:last-child {
-  border-bottom: none;
+  margin-bottom: 0;
 }
 
 .detail-item strong {
-  color: #333;
+  color: #1f2937;
   min-width: 180px;
   font-weight: 600;
 }
 
 .detail-item span {
-  color: #555;
+  color: #4b5563;
   flex: 1;
   word-break: break-word;
 }
@@ -235,7 +241,7 @@
   text-align: center;
   padding: 3rem;
   font-size: 1.2rem;
-  color: #764ba2;
+  color: #3b82f6;
 }
 
 /* Delete Confirmation Modal */
@@ -255,23 +261,24 @@
 .modal-content {
   background: white;
   padding: 2rem;
-  border-radius: 12px;
+  border-radius: 1rem;
   max-width: 500px;
   width: 90%;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
 .modal-content h3 {
   margin-top: 0;
-  color: #333;
+  color: #1f2937;
   font-size: 1.5rem;
   margin-bottom: 1rem;
+  font-weight: 700;
 }
 
 .modal-content p {
-  color: #666;
+  color: #4b5563;
   margin-bottom: 1.5rem;
-  line-height: 1.6;
+  line-height: 1.625;
 }
 
 .modal-actions {
@@ -330,8 +337,9 @@
 .pets-section {
   margin-top: 2rem;
   padding: 1.5rem;
-  background: #f9f9f9;
-  border-radius: 8px;
+  background: #dbeafe;
+  border-radius: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .no-pets {
@@ -340,7 +348,7 @@
 }
 
 .no-pets p {
-  color: #666;
+  color: #4b5563;
   margin-bottom: 1.5rem;
   font-size: 1.1rem;
 }
@@ -354,8 +362,8 @@
 
 .pet-card {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   transition: all 0.3s ease;
   border: 2px solid transparent;
@@ -363,12 +371,12 @@
 
 .pet-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-  border-color: #764ba2;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border-color: #3b82f6;
 }
 
 .pet-card-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-color: #3b82f6;
   color: white;
   padding: 1rem;
   display: flex;
@@ -396,12 +404,12 @@
 
 .pet-card-body p {
   margin: 0.75rem 0;
-  color: #555;
+  color: #4b5563;
   font-size: 0.95rem;
 }
 
 .pet-card-body strong {
-  color: #333;
+  color: #1f2937;
   font-weight: 600;
 }
 
@@ -420,16 +428,17 @@
 .pet-form-container {
   background: white;
   padding: 2rem;
-  border-radius: 12px;
+  border-radius: 1rem;
   margin-top: 1rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .pet-form-container h3 {
   margin-top: 0;
-  color: #764ba2;
+  color: #1e40af;
   font-size: 1.5rem;
   margin-bottom: 1.5rem;
+  font-weight: 700;
 }
 
 .pet-form {
@@ -439,8 +448,8 @@
 .pet-form select {
   width: 100%;
   padding: 0.75rem;
-  border: 2px solid #ddd;
-  border-radius: 8px;
+  border: 2px solid #d1d5db;
+  border-radius: 0.5rem;
   font-size: 1rem;
   transition: all 0.3s ease;
   box-sizing: border-box;
@@ -451,8 +460,8 @@
 
 .pet-form select:focus {
   outline: none;
-  border-color: #764ba2;
-  box-shadow: 0 0 0 3px rgba(118, 75, 162, 0.1);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .pet-form select.error {
