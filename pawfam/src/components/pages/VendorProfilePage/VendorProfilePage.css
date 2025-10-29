@@ -1,6 +1,6 @@
 .vendor-profile-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-color: #f9fafb;
   padding: 2rem 1rem;
 }
 
@@ -8,32 +8,34 @@
   max-width: 900px;
   margin: 0 auto;
   background: white;
-  border-radius: 1rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  border-radius: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   padding: 2.5rem;
 }
 
 .vendor-profile-title {
   text-align: center;
-  color: #667eea;
+  color: #1e40af;
   margin-bottom: 2rem;
   font-size: 2.5rem;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .profile-info-section {
-  background: #f9fafb;
-  border-radius: 0.75rem;
+  background: #dbeafe;
+  border-radius: 1rem;
   padding: 1.5rem;
   margin-bottom: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .profile-info-section h2 {
-  color: #374151;
+  color: #1f2937;
   font-size: 1.25rem;
   margin-bottom: 1rem;
-  border-bottom: 2px solid #667eea;
+  border-bottom: 2px solid #3b82f6;
   padding-bottom: 0.5rem;
+  font-weight: 700;
 }
 
 .account-info p {
@@ -49,7 +51,7 @@
 
 .profile-details-section {
   background: #ffffff;
-  border-radius: 0.75rem;
+  border-radius: 1rem;
   padding: 1.5rem;
   border: 1px solid #e5e7eb;
 }
@@ -60,15 +62,15 @@
   align-items: center;
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 2px solid #667eea;
+  border-bottom: 2px solid #3b82f6;
 }
 
 .section-header h2 {
-  color: #374151;
+  color: #1f2937;
   font-size: 1.25rem;
   margin: 0;
+  font-weight: 700;
 }
-
 .action-buttons {
   display: flex;
   gap: 1rem;
@@ -77,23 +79,23 @@
 .btn {
   padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: 0.5rem;
-  font-weight: 600;
+  border-radius: 9999px;
+  font-weight: 700;
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-color: #3b82f6;
   color: white;
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  background-color: #2563eb;
+  transform: scale(1.05);
 }
-
 .btn-secondary {
   background: #6b7280;
   color: white;
@@ -154,7 +156,7 @@
 .form-group input,
 .form-group textarea {
   padding: 0.875rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid #d1d5db;
   border-radius: 0.5rem;
   font-size: 1rem;
   transition: all 0.3s ease;
@@ -163,10 +165,9 @@
 .form-group input:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
-
 .form-group input.error,
 .form-group textarea.error {
   border-color: #ef4444;
@@ -217,11 +218,15 @@
 .detail-item {
   display: flex;
   padding: 1rem;
-  background: #f9fafb;
+  background: #dbeafe;
   border-radius: 0.5rem;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #3b82f6;
+  margin-bottom: 0.75rem;
 }
 
+.detail-item:last-child {
+  margin-bottom: 0;
+}
 .detail-item strong {
   color: #374151;
   min-width: 200px;
@@ -252,9 +257,8 @@
   border-radius: 1rem;
   max-width: 500px;
   width: 90%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
-
 .modal-content h3 {
   color: #1f2937;
   margin-bottom: 1rem;
@@ -275,10 +279,9 @@
 .loading-spinner {
   text-align: center;
   padding: 3rem;
-  color: #667eea;
+  color: #3b82f6;
   font-size: 1.125rem;
 }
-
 @media (max-width: 768px) {
   .vendor-profile-container {
     padding: 1.5rem;
