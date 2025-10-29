@@ -5,10 +5,14 @@ import Header from './components/Header/Header';
 import LandingPage from './components/pages/LandingPage/LandingPage';
 import LoginPage from './components/pages/LoginPage/LoginPage';
 import SignUpPage from './components/pages/SignUpPage/SignUpPage';
+import VendorLoginPage from './components/pages/VendorLoginPage/VendorLoginPage';
+import VendorSignUpPage from './components/pages/VendorSignUpPage/VendorSignUpPage';
 import ForgotPasswordPage from './components/pages/ForgotPasswordPage/ForgotPasswordPage';
 import PetServicesPage from './components/pages/PetServicesPage/PetServicePage';
 import AccessoriesPage from './components/pages/AccessoriesPage/AccessoriesPage';
 import AdoptionPage from './components/pages/AdoptionPage/AdoptionPage';
+import ProfilePage from './components/pages/ProfilePage/ProfilePage';
+import VendorProfilePage from './components/pages/VendorProfilePage/VendorProfilePage';
 import { authAPI } from './services/api';
 import './App.css';
 
@@ -62,7 +66,23 @@ const App = () => {
     setIsLoggedIn(true);
     setUser(data.user);
     setCurrentPage('landing');
-    showModal('Signup Successful', `Welcome to PetFam, ${data.user.username}!`);
+    showModal('Signup Successful', `Welcome to PawFam, ${data.user.username}!`);
+  };
+
+  // Handle vendor login
+  const handleVendorLogin = (data) => {
+    setIsLoggedIn(true);
+    setUser(data.user);
+    setCurrentPage('landing');
+    showModal('Vendor Login Successful', `Welcome back, ${data.user.username}!`);
+  };
+
+  // Handle vendor signup
+  const handleVendorSignup = (data) => {
+    setIsLoggedIn(true);
+    setUser(data.user);
+    setCurrentPage('landing');
+    showModal('Vendor Account Created', `Welcome to PawFam, ${data.user.username}!`);
   };
 
   const handleLogout = () => {
@@ -84,8 +104,16 @@ const App = () => {
         return <LoginPage onNavigate={setCurrentPage} onLogin={handleLogin} />;
       case 'signup':
         return <SignUpPage onNavigate={setCurrentPage} onSignup={handleSignup} />;
+      case 'vendor-login':
+        return <VendorLoginPage onNavigate={setCurrentPage} onLogin={handleVendorLogin} />;
+      case 'vendor-signup':
+        return <VendorSignUpPage onNavigate={setCurrentPage} onSignup={handleVendorSignup} />;
       case 'forgot':
         return <ForgotPasswordPage onNavigate={setCurrentPage} />;
+      case 'profile':
+        return <ProfilePage user={user} />;
+      case 'vendor-profile':
+        return <VendorProfilePage user={user} />;
       case 'services':
         return <PetServicesPage user={user} />;
       case 'accessories':
@@ -101,14 +129,18 @@ const App = () => {
   return (
     <CartProvider>
       <div className="app">
-        {currentPage !== 'login' && currentPage !== 'signup' && currentPage !== 'forgot' && (
-          <Header 
-            onNavigate={setCurrentPage} 
-            isLoggedIn={isLoggedIn} 
-            onLogout={handleLogout}
-            user={user}
-          />
-        )}
+        {currentPage !== 'login' &&
+          currentPage !== 'signup' &&
+          currentPage !== 'vendor-login' &&
+          currentPage !== 'vendor-signup' &&
+          currentPage !== 'forgot' && (
+            <Header
+              onNavigate={setCurrentPage}
+              isLoggedIn={isLoggedIn}
+              onLogout={handleLogout}
+              user={user}
+            />
+          )}
         <main>
           {renderPage()}
         </main>

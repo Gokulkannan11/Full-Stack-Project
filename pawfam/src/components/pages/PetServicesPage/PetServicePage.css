@@ -218,20 +218,250 @@
   background-color: #059669;
 }
 
+/* Mode Selection Styles */
+.mode-selection {
+  margin-top: 1rem;
+}
+
+.mode-selection h3 {
+  text-align: center;
+  color: #1f2937;
+  margin-bottom: 1.5rem;
+}
+
+.mode-buttons {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+.mode-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.75rem;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mode-btn:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+  transform: translateY(-2px);
+}
+
+.mode-btn.full-width {
+  grid-column: 1 / -1;
+}
+
+.mode-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.mode-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.mode-desc {
+  font-size: 0.875rem;
+  color: #6b7280;
+  text-align: center;
+}
+
+.no-pets-message {
+  text-align: center;
+  padding: 1rem;
+}
+
+.no-pets-message p {
+  color: #6b7280;
+  margin-bottom: 1rem;
+}
+
+/* Pet Selection Styles */
+.pet-selection {
+  margin-top: 1rem;
+}
+
+.selection-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.selection-header h3 {
+  color: #1f2937;
+  margin: 0;
+}
+
+.back-btn {
+  padding: 0.5rem 1rem;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 0.5rem;
+  color: #374151;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.back-btn:hover {
+  background: #e5e7eb;
+}
+
+.pets-list {
+  display: grid;
+  gap: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.pet-option {
+  padding: 1.5rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.pet-option:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+  transform: translateX(4px);
+}
+
+.pet-option-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.pet-option-header h4 {
+  color: #1f2937;
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.pet-badge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.pet-option-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pet-option-details p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.pet-option-details strong {
+  color: #374151;
+}
+
+/* Selected Pet Info Styles */
+.selected-pet-info {
+  margin-bottom: 1.5rem;
+}
+
+.selected-pet-info h4 {
+  color: #1f2937;
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+}
+
+.pet-info-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.25rem;
+  border-radius: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.pet-info-card p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.pet-info-card strong {
+  font-weight: 600;
+}
+
+/* Booking Form Wrapper */
+.booking-form-wrapper {
+  margin-top: 1rem;
+}
+
+/* Auto-filled Input Styles */
+.form-group input.auto-filled,
+.form-group select.auto-filled {
+  background-color: #f0f9ff;
+  border-color: #3b82f6;
+  color: #1e40af;
+  font-weight: 500;
+}
+
+.form-group input.auto-filled:disabled,
+.form-group select.auto-filled:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+.help-text {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #3b82f6;
+  font-style: italic;
+}
+
 @media (max-width: 768px) {
   .services-page {
     padding: 1rem;
   }
-  
+
   .centers-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .form-row {
     grid-template-columns: 1fr;
   }
-  
+
   .booking-form-container {
     padding: 1rem;
+  }
+
+  .mode-buttons {
+    grid-template-columns: 1fr;
+  }
+
+  .mode-btn {
+    padding: 1.5rem 1rem;
+  }
+
+  .mode-icon {
+    font-size: 2.5rem;
   }
 }

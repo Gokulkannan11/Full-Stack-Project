@@ -17,6 +17,9 @@ app.use(express.json());
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/profile', require('./routes/profile'));
+app.use('/api/vendor-profile', require('./routes/vendorProfile'));
+app.use('/api/pets', require('./routes/pets'));
 app.use('/api/daycare', require('./routes/daycare'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/adoption', require('./routes/adoption'));

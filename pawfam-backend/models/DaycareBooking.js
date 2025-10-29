@@ -18,7 +18,7 @@ const DaycareBookingSchema = new mongoose.Schema({
   petType: {
     type: String,
     required: true,
-    enum: ['dog', 'cat', 'bird', 'other']
+    enum: ['Dog', 'Cat', 'Bird', 'Other', 'dog', 'cat', 'bird', 'other']
   },
   petAge: {
     type: String,

@@ -39,6 +39,14 @@ export const authAPI = {
     const response = await API.post('/auth/login', credentials);
     return response.data;
   },
+  vendorRegister: async (userData) => {
+    const response = await API.post('/auth/vendor/register', userData);
+    return response.data;
+  },
+  vendorLogin: async (credentials) => {
+    const response = await API.post('/auth/vendor/login', credentials);
+    return response.data;
+  },
   forgotPassword: async (email) => {
     const response = await API.post('/auth/forgot-password', { email });
     return response.data;
@@ -81,6 +89,74 @@ export const adoptionAPI = {
   },
   getApplications: async () => {
     const response = await API.get('/adoption/applications');
+    return response.data;
+  },
+};
+
+// Profile API
+export const profileAPI = {
+  getProfile: async () => {
+    const response = await API.get('/profile');
+    return response.data;
+  },
+  createProfile: async (profileData) => {
+    const response = await API.post('/profile', profileData);
+    return response.data;
+  },
+  updateProfile: async (profileData) => {
+    const response = await API.put('/profile', profileData);
+    return response.data;
+  },
+  deleteProfile: async () => {
+    const response = await API.delete('/profile');
+    return response.data;
+  },
+};
+
+// Vendor Profile API
+export const vendorProfileAPI = {
+  getProfile: async () => {
+    const response = await API.get('/vendor-profile');
+    return response.data;
+  },
+  createProfile: async (profileData) => {
+    const response = await API.post('/vendor-profile', profileData);
+    return response.data;
+  },
+  updateProfile: async (profileData) => {
+    const response = await API.put('/vendor-profile', profileData);
+    return response.data;
+  },
+  deleteProfile: async () => {
+    const response = await API.delete('/vendor-profile');
+    return response.data;
+  },
+};
+
+// Pets API
+export const petsAPI = {
+  getBreeds: async (category) => {
+    const response = await API.get(`/pets/breeds/${category}`);
+    return response.data;
+  },
+  getPets: async () => {
+    const response = await API.get('/pets');
+    return response.data;
+  },
+  getPet: async (id) => {
+    const response = await API.get(`/pets/${id}`);
+    return response.data;
+  },
+  createPet: async (petData) => {
+    const response = await API.post('/pets', petData);
+    return response.data;
+  },
+  updatePet: async (id, petData) => {
+    const response = await API.put(`/pets/${id}`, petData);
+    return response.data;
+  },
+  deletePet: async (id) => {
+    const response = await API.delete(`/pets/${id}`);
     return response.data;
   },
 };

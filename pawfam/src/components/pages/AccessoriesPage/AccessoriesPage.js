@@ -213,7 +213,7 @@ const AccessoriesPage = ({ user }) => {
               <div className="product-rating">
                 ⭐ {product.rating}
               </div>
-              <div className="product-price">${product.price}</div>
+              <div className="product-price">₹{product.price}</div>
               <button 
                 className="add-to-cart-btn"
                 onClick={() => addToCart(product)}
@@ -248,7 +248,7 @@ const AccessoriesPage = ({ user }) => {
                   <img src={item.image} alt={item.name} />
                   <div className="cart-item-details">
                     <h4>{item.name}</h4>
-                    <p>${item.price}</p>
+                    <p>₹{item.price}</p>
                     <div className="quantity-controls">
                       <button 
                         onClick={() => updateQuantity(item.id, item.quantity - 1)}
@@ -279,7 +279,7 @@ const AccessoriesPage = ({ user }) => {
           {cartItems.length > 0 && (
             <div className="cart-footer">
               <div className="cart-total">
-                Total: ${getCartTotal().toFixed(2)}
+                Total: ₹{getCartTotal().toFixed(2)}
               </div>
               <button 
                 className="checkout-btn"
@@ -431,11 +431,11 @@ const AccessoriesPage = ({ user }) => {
                 {cartItems.map(item => (
                   <div key={item.id} className="order-item">
                     <span>{item.name} x {item.quantity}</span>
-                    <span>${(item.price * item.quantity).toFixed(2)}</span>
+                    <span>₹{(item.price * item.quantity).toFixed(2)}</span>
                   </div>
                 ))}
                 <div className="order-total">
-                  <strong>Total: ${getCartTotal().toFixed(2)}</strong>
+                  <strong>Total: ₹{getCartTotal().toFixed(2)}</strong>
                 </div>
               </div>
 
