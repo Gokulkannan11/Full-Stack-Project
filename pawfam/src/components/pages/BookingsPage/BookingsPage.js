@@ -10,6 +10,10 @@ const BookingsPage = ({ user }) => {
   const [productOrders, setProductOrders] = useState([]);
   const [adoptionApplications, setAdoptionApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [sortBy, setSortBy] = useState('createdAt-desc'); // Default sort by newest first
+  const [accessoriesSortBy, setAccessoriesSortBy] = useState('createdAt-desc'); // Sort for accessories
 
   useEffect(() => {
     if (user) {
@@ -17,13 +21,77 @@ const BookingsPage = ({ user }) => {
     }
   }, [user]);
 
+  // Handle search with debouncing
+  useEffect(() => {
+    if (user && activeTab === 'daycare') {
+      const delayDebounce = setTimeout(() => {
+        handleDaycareSearch();
+      }, 500); // 500ms delay
+
+      return () => clearTimeout(delayDebounce);
+    }
+  }, [searchKeyword, user]);
+
+  const handleDaycareSearch = async () => {
+    try {
+      setIsSearching(true);
+      const daycareData = await daycareAPI.getBookings(searchKeyword);
+      const sortedData = sortBookings(Array.isArray(daycareData) ? daycareData : [], sortBy);
+      setDaycareBookings(sortedData);
+    } catch (error) {
+      console.error('Error searching daycare bookings:', error);
+      setDaycareBookings([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const sortBookings = (bookings, sortOption) => {
+    const sorted = [...bookings];
+
+    switch (sortOption) {
+      case 'totalAmount-asc':
+        return sorted.sort((a, b) => a.totalAmount - b.totalAmount);
+      case 'totalAmount-desc':
+        return sorted.sort((a, b) => b.totalAmount - a.totalAmount);
+      case 'createdAt-asc':
+        return sorted.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      case 'createdAt-desc':
+        return sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      default:
+        return sorted;
+    }
+  };
+
+  const handleSortChange = (e) => {
+    const newSortBy = e.target.value;
+    setSortBy(newSortBy);
+    const sortedData = sortBookings(daycareBookings, newSortBy);
+    setDaycareBookings(sortedData);
+  };
+
+  const handleAccessoriesSortChange = (e) => {
+    const newSortBy = e.target.value;
+    setAccessoriesSortBy(newSortBy);
+    const sortedData = sortBookings(productOrders, newSortBy);
+    setProductOrders(sortedData);
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchKeyword(e.target.value);
+  };
+
+  const clearSearch = () => {
+    setSearchKeyword('');
+  };
+
   const fetchAllBookings = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch daycare bookings
       try {
-        const daycareData = await daycareAPI.getBookings();
+        const daycareData = await daycareAPI.getBookings(searchKeyword);
         console.log('Daycare bookings:', daycareData);
         setDaycareBookings(Array.isArray(daycareData) ? daycareData : []);
       } catch (error) {
@@ -35,7 +103,8 @@ const BookingsPage = ({ user }) => {
       try {
         const productsData = await productsAPI.getOrders();
         console.log('Product orders:', productsData);
-        setProductOrders(Array.isArray(productsData) ? productsData : []);
+        const sortedProducts = sortBookings(Array.isArray(productsData) ? productsData : [], accessoriesSortBy);
+        setProductOrders(sortedProducts);
       } catch (error) {
         console.error('Error fetching product orders:', error);
         setProductOrders([]);
@@ -101,7 +170,7 @@ const BookingsPage = ({ user }) => {
       <div className="bookings-container">
         <div className="bookings-header-section">
           <h1 className="bookings-title">My Bookings</h1>
-          <button 
+          <button
             className="refresh-btn"
             onClick={fetchAllBookings}
             disabled={loading}
@@ -141,12 +210,72 @@ const BookingsPage = ({ user }) => {
             {/* Daycare Bookings Tab */}
             {activeTab === 'daycare' && (
               <div className="bookings-list">
+                {/* Search Bar */}
+                <div className="search-bar-container">
+                  <div className="search-sort-container">
+                    <div className="search-input-wrapper">
+                      <input
+                        type="text"
+                        className="search-input"
+                        placeholder="Search by pet name, type, center, location, status..."
+                        value={searchKeyword}
+                        onChange={handleSearchChange}
+                      />
+                      {searchKeyword && (
+                        <button
+                          className="clear-search-btn"
+                          onClick={clearSearch}
+                          title="Clear search"
+                        >
+                          ✕
+                        </button>
+                      )}
+                      {isSearching && (
+                        <span className="search-loading">🔍</span>
+                      )}
+                    </div>
+
+                    <div className="sort-controls">
+                      <label className="sort-label">Sort by:</label>
+                      <select
+                        className="sort-select"
+                        value={sortBy}
+                        onChange={handleSortChange}
+                      >
+                        <option value="createdAt-desc">Newest First</option>
+                        <option value="createdAt-asc">Oldest First</option>
+                        <option value="totalAmount-desc">Amount: High to Low</option>
+                        <option value="totalAmount-asc">Amount: Low to High</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {searchKeyword && (
+                    <div className="search-results-info">
+                      Found {daycareBookings.length} result{daycareBookings.length !== 1 ? 's' : ''}
+                      {searchKeyword && ` for "${searchKeyword}"`}
+                    </div>
+                  )}
+                </div>
+
                 {daycareBookings.length === 0 ? (
                   <div className="no-bookings">
                     <div className="no-bookings-icon">📅</div>
-                    <h3>No Daycare Bookings Yet</h3>
-                    <p>You haven't made any daycare bookings yet.</p>
-                    <p>Visit the Centers page to book a daycare service for your pet.</p>
+                    {searchKeyword ? (
+                      <>
+                        <h3>No Results Found</h3>
+                        <p>No daycare bookings match your search "{searchKeyword}".</p>
+                        <button className="clear-search-btn-inline" onClick={clearSearch}>
+                          Clear Search
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <h3>No Daycare Bookings Yet</h3>
+                        <p>You haven't made any daycare bookings yet.</p>
+                        <p>Visit the Centers page to book a daycare service for your pet.</p>
+                      </>
+                    )}
                   </div>
                 ) : (
                   daycareBookings.map((booking) => (
@@ -202,8 +331,29 @@ const BookingsPage = ({ user }) => {
             {/* Accessories Orders Tab */}
             {activeTab === 'accessories' && (
               <div className="bookings-list">
+                {/* Sort Controls for Accessories */}
+                {productOrders.length > 0 && (
+                  <div className="search-bar-container">
+                    <div className="sort-controls">
+                      <label className="sort-label">Sort by:</label>
+                      <select
+                        className="sort-select"
+                        value={accessoriesSortBy}
+                        onChange={handleAccessoriesSortChange}
+                      >
+                        <option value="createdAt-desc">Newest First</option>
+                        <option value="createdAt-asc">Oldest First</option>
+                        <option value="totalAmount-desc">Amount: High to Low</option>
+                        <option value="totalAmount-asc">Amount: Low to High</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+
                 {productOrders.length === 0 ? (
                   <div className="no-bookings">
+                    <div className="no-bookings-icon">🛍️</div>
+                    <h3>No Accessory Orders Yet</h3>
                     <p>You haven't placed any accessory orders yet.</p>
                   </div>
                 ) : (

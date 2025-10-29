@@ -63,8 +63,9 @@ export const daycareAPI = {
     const response = await API.post('/daycare/bookings', bookingData);
     return response.data;
   },
-  getBookings: async () => {
-    const response = await API.get('/daycare/bookings');
+  getBookings: async (searchKeyword = '') => {
+    const params = searchKeyword ? { search: searchKeyword } : {};
+    const response = await API.get('/daycare/bookings', { params });
     return response.data;
   },
 };
