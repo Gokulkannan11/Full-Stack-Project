@@ -13,6 +13,7 @@ import AccessoriesPage from './components/pages/AccessoriesPage/AccessoriesPage'
 import AdoptionPage from './components/pages/AdoptionPage/AdoptionPage';
 import ProfilePage from './components/pages/ProfilePage/ProfilePage';
 import VendorProfilePage from './components/pages/VendorProfilePage/VendorProfilePage';
+import BookingsPage from './components/pages/BookingsPage/BookingsPage';
 import { authAPI } from './services/api';
 import './App.css';
 
@@ -102,6 +103,8 @@ const App = () => {
     switch (currentPage) {
       case 'login':
         return <LoginPage onNavigate={setCurrentPage} onLogin={handleLogin} />;
+      case 'bookings':
+        return <BookingsPage user={user} />;
       case 'signup':
         return <SignUpPage onNavigate={setCurrentPage} onSignup={handleSignup} />;
       case 'vendor-login':
