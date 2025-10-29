@@ -50,7 +50,7 @@ const LandingPage = ({ onNavigate }) => {
 
         <footer className="landing-footer">
           <div className="container">
-            <p className="footer-text">&copy; 2024 PawFam🐾. All rights reserved.</p>
+            <p className="footer-text">&copy; 2025 PawFam🐾. All rights reserved.</p>
           </div>
         </footer>
       </main>
