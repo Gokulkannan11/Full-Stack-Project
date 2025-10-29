@@ -31,6 +31,11 @@ const ProfilePage = ({ user }) => {
     const [availableBreeds, setAvailableBreeds] = useState([]);
     const [deletingPetId, setDeletingPetId] = useState(null);
 
+    // Search and Sort state for pets
+    const [petSearchKeyword, setPetSearchKeyword] = useState('');
+    const [petSortBy, setPetSortBy] = useState('category-cat'); // Default sort
+    const [filteredPets, setFilteredPets] = useState([]);
+
     useEffect(() => {
         fetchProfile();
         fetchPets();
@@ -178,6 +183,66 @@ const ProfilePage = ({ user }) => {
         } finally {
             setPetsLoading(false);
         }
+    };
+
+    // Filter and sort pets whenever pets, search, or sort changes
+    useEffect(() => {
+        let result = [...pets];
+
+        // Apply search filter
+        if (petSearchKeyword.trim()) {
+            const keyword = petSearchKeyword.toLowerCase();
+            result = result.filter(pet =>
+                pet.name.toLowerCase().includes(keyword) ||
+                pet.category.toLowerCase().includes(keyword) ||
+                pet.breed.toLowerCase().includes(keyword) ||
+                pet.age.toString().includes(keyword)
+            );
+        }
+
+        // Apply sorting
+        result = sortPets(result, petSortBy);
+
+        setFilteredPets(result);
+    }, [pets, petSearchKeyword, petSortBy]);
+
+    const sortPets = (petsArray, sortOption) => {
+        const sorted = [...petsArray];
+
+        switch (sortOption) {
+            case 'category-cat':
+                // Show Cats first, then Dogs
+                return sorted.sort((a, b) => {
+                    if (a.category === 'Cat' && b.category !== 'Cat') return -1;
+                    if (a.category !== 'Cat' && b.category === 'Cat') return 1;
+                    return 0;
+                });
+            case 'category-dog':
+                // Show Dogs first, then Cats
+                return sorted.sort((a, b) => {
+                    if (a.category === 'Dog' && b.category !== 'Dog') return -1;
+                    if (a.category !== 'Dog' && b.category === 'Dog') return 1;
+                    return 0;
+                });
+            case 'age-asc':
+                return sorted.sort((a, b) => a.age - b.age);
+            case 'age-desc':
+                return sorted.sort((a, b) => b.age - a.age);
+            default:
+                return sorted;
+        }
+    };
+
+    const handlePetSearchChange = (e) => {
+        setPetSearchKeyword(e.target.value);
+    };
+
+    const clearPetSearch = () => {
+        setPetSearchKeyword('');
+    };
+
+    const handlePetSortChange = (e) => {
+        setPetSortBy(e.target.value);
     };
 
     const fetchBreeds = async (category) => {
@@ -683,36 +748,93 @@ const ProfilePage = ({ user }) => {
                             </button>
                         </div>
                     ) : (
-                        <div className="pets-grid">
-                            {pets.map((pet) => (
-                                <div key={pet.id} className="pet-card">
-                                    <div className="pet-card-header">
-                                        <h3>{pet.name}</h3>
-                                        <span className="pet-category-badge">{pet.category}</span>
-                                    </div>
-                                    <div className="pet-card-body">
-                                        <p><strong>Breed:</strong> {pet.breed}</p>
-                                        <p><strong>Age:</strong> {pet.age} {pet.age === 1 ? 'year' : 'years'}</p>
-                                    </div>
-                                    <div className="pet-card-actions">
+                        <>
+                            {/* Search and Sort Controls */}
+                            <div className="pets-search-sort-container">
+                                <div className="pets-search-wrapper">
+                                    <input
+                                        type="text"
+                                        className="pets-search-input"
+                                        placeholder="Search by name, category, breed, or age..."
+                                        value={petSearchKeyword}
+                                        onChange={handlePetSearchChange}
+                                    />
+                                    {petSearchKeyword && (
                                         <button
-                                            onClick={() => handleEditPet(pet)}
-                                            className="btn btn-small btn-primary"
-                                            disabled={petsLoading}
+                                            className="pets-clear-search-btn"
+                                            onClick={clearPetSearch}
+                                            title="Clear search"
                                         >
-                                            Edit
+                                            ✕
                                         </button>
-                                        <button
-                                            onClick={() => handleDeletePet(pet.id)}
-                                            className="btn btn-small btn-danger"
-                                            disabled={petsLoading}
-                                        >
-                                            Delete
-                                        </button>
-                                    </div>
+                                    )}
                                 </div>
-                            ))}
-                        </div>
+
+                                <div className="pets-sort-controls">
+                                    <label className="pets-sort-label">Sort by:</label>
+                                    <select
+                                        className="pets-sort-select"
+                                        value={petSortBy}
+                                        onChange={handlePetSortChange}
+                                    >
+                                        <option value="category-cat">Category: Cat First</option>
+                                        <option value="category-dog">Category: Dog First</option>
+                                        <option value="age-asc">Age: Low to High</option>
+                                        <option value="age-desc">Age: High to Low</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {petSearchKeyword && (
+                                <div className="pets-search-results-info">
+                                    Found {filteredPets.length} result{filteredPets.length !== 1 ? 's' : ''}
+                                    {petSearchKeyword && ` for "${petSearchKeyword}"`}
+                                </div>
+                            )}
+
+                            {filteredPets.length === 0 ? (
+                                <div className="no-pets">
+                                    <p>No pets match your search "{petSearchKeyword}".</p>
+                                    <button
+                                        className="clear-search-btn-inline"
+                                        onClick={clearPetSearch}
+                                    >
+                                        Clear Search
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="pets-grid">
+                                    {filteredPets.map((pet) => (
+                                        <div key={pet.id} className="pet-card">
+                                            <div className="pet-card-header">
+                                                <h3>{pet.name}</h3>
+                                                <span className="pet-category-badge">{pet.category}</span>
+                                            </div>
+                                            <div className="pet-card-body">
+                                                <p><strong>Breed:</strong> {pet.breed}</p>
+                                                <p><strong>Age:</strong> {pet.age} {pet.age === 1 ? 'year' : 'years'}</p>
+                                            </div>
+                                            <div className="pet-card-actions">
+                                                <button
+                                                    onClick={() => handleEditPet(pet)}
+                                                    className="btn btn-small btn-primary"
+                                                    disabled={petsLoading}
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeletePet(pet.id)}
+                                                    className="btn btn-small btn-danger"
+                                                    disabled={petsLoading}
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>

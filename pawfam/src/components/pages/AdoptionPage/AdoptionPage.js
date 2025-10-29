@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { adoptionAPI } from '../../../services/api';
+import React, { useState, useEffect } from 'react';
+import { adoptionAPI, profileAPI } from '../../../services/api';
 import './AdoptionPage.css';
 
 const AdoptionPage = ({ user }) => {
@@ -19,6 +19,25 @@ const AdoptionPage = ({ user }) => {
     otherPetsDetails: ''
   });
   const [loading, setLoading] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
+
+  // Fetch user profile data on component mount
+  useEffect(() => {
+    if (user) {
+      fetchUserProfile();
+    }
+  }, [user]);
+
+  const fetchUserProfile = async () => {
+    try {
+      const data = await profileAPI.getProfile();
+      if (data.hasProfile && data.profile) {
+        setUserProfile(data.profile);
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
 
   // Mock data for pets available for adoption
   const pets = [
@@ -52,14 +71,14 @@ const AdoptionPage = ({ user }) => {
 
   const handleAdoptionSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!user) {
       alert('Please login to submit an adoption application');
       return;
     }
 
     setLoading(true);
-    
+
     try {
       const applicationPayload = {
         pet: {
@@ -90,7 +109,7 @@ const AdoptionPage = ({ user }) => {
       };
 
       await adoptionAPI.createApplication(applicationPayload);
-      
+
       alert('Adoption application submitted successfully! We will contact you soon.');
       setShowAdoptionForm(false);
       setSelectedPet(null);
@@ -110,7 +129,7 @@ const AdoptionPage = ({ user }) => {
     } catch (error) {
       alert(error.response?.data?.message || 'Error submitting application');
     }
-    
+
     setLoading(false);
   };
 
@@ -119,6 +138,16 @@ const AdoptionPage = ({ user }) => {
       alert('Please login to submit an adoption application');
       return;
     }
+
+    // Auto-fill form with profile data
+    setAdoptionData(prev => ({
+      ...prev,
+      fullName: userProfile?.name || '',
+      email: user?.email || '',
+      phone: userProfile?.mobileNumber || '',
+      address: userProfile?.residentialAddress || ''
+    }));
+
     setSelectedPet(pet);
     setShowAdoptionForm(true);
   };
@@ -205,7 +234,7 @@ const AdoptionPage = ({ user }) => {
                 </div>
               </div>
               <p className="pet-description">{pet.description}</p>
-              <button 
+              <button
                 className="meet-pet-btn"
                 onClick={() => handleMeetPet(pet)}
                 disabled={!user}
@@ -223,7 +252,7 @@ const AdoptionPage = ({ user }) => {
           <div className="adoption-form-container">
             <div className="adoption-header">
               <h2>Adopt {selectedPet.name}</h2>
-              <button 
+              <button
                 className="close-btn"
                 onClick={() => setShowAdoptionForm(false)}
                 disabled={loading}
@@ -231,7 +260,7 @@ const AdoptionPage = ({ user }) => {
                 ×
               </button>
             </div>
-            
+
             <div className="pet-summary">
               <img src={selectedPet.image} alt={selectedPet.name} />
               <div className="pet-summary-info">
@@ -401,25 +430,25 @@ const AdoptionPage = ({ user }) => {
 
               <div className="form-agreement">
                 <label className="checkbox-label">
-                  <input 
-                    type="checkbox" 
-                    required 
+                  <input
+                    type="checkbox"
+                    required
                     disabled={loading}
                   />
                   I understand that this is an adoption application and approval is subject to shelter review and home visit
                 </label>
                 <label className="checkbox-label">
-                  <input 
-                    type="checkbox" 
-                    required 
+                  <input
+                    type="checkbox"
+                    required
                     disabled={loading}
                   />
                   I agree to provide a loving and safe environment for the pet
                 </label>
               </div>
 
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="submit-application-btn"
                 disabled={loading}
               >
