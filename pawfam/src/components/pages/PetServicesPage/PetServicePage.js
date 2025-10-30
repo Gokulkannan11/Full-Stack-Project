@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { daycareAPI, petsAPI } from '../../../services/api';
+import { daycareAPI, petsAPI, profileAPI } from '../../../services/api';
 import './PetServicePage.css';
 
 const PetServicesPage = ({ user }) => {
@@ -8,6 +8,8 @@ const PetServicesPage = ({ user }) => {
     petName: '',
     petType: '',
     petAge: '',
+    email: '',
+    mobileNumber: '',
     startDate: '',
     endDate: '',
     specialInstructions: ''
@@ -19,11 +21,14 @@ const PetServicesPage = ({ user }) => {
   const [selectedPetId, setSelectedPetId] = useState('');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [userProfile, setUserProfile] = useState(null);
+  const [validationErrors, setValidationErrors] = useState({});
 
-  // Fetch user's pets when component mounts
+  // Fetch user's pets and profile when component mounts
   useEffect(() => {
     if (user) {
       fetchUserPets();
+      fetchUserProfile();
     }
   }, [user]);
 
@@ -49,6 +54,74 @@ const PetServicesPage = ({ user }) => {
     }
   };
 
+  const fetchUserProfile = async () => {
+    try {
+      const data = await profileAPI.getProfile();
+      if (data.hasProfile && data.profile) {
+        setUserProfile(data.profile);
+        // Auto-fill email and mobile from profile
+        setBookingData(prev => ({
+          ...prev,
+          email: user?.email || '',
+          mobileNumber: data.profile.mobileNumber || ''
+        }));
+      } else {
+        // If no profile, just set email from user
+        setBookingData(prev => ({
+          ...prev,
+          email: user?.email || ''
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      // Fallback to user email
+      setBookingData(prev => ({
+        ...prev,
+        email: user?.email || ''
+      }));
+    }
+  };
+
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validateMobileNumber = (mobile) => {
+    // Indian mobile number validation: 10 digits, optionally starting with +91 or 91
+    const mobileRegex = /^(\+91|91)?[6-9]\d{9}$/;
+    return mobileRegex.test(mobile.replace(/\s/g, ''));
+  };
+
+  const handleMobileNumberChange = (e) => {
+    const value = e.target.value;
+    // Only allow numeric input and limit to 10 digits
+    const numericValue = value.replace(/\D/g, '').slice(0, 10);
+    setBookingData({ ...bookingData, mobileNumber: numericValue });
+    if (validationErrors.mobileNumber) {
+      setValidationErrors({ ...validationErrors, mobileNumber: '' });
+    }
+  };
+
+  const validateForm = () => {
+    const errors = {};
+
+    if (!bookingData.email) {
+      errors.email = 'Email is required';
+    } else if (!validateEmail(bookingData.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+
+    if (!bookingData.mobileNumber) {
+      errors.mobileNumber = 'Mobile number is required';
+    } else if (!validateMobileNumber(bookingData.mobileNumber)) {
+      errors.mobileNumber = 'Please enter a valid 10-digit mobile number';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handlePetSelection = (petId) => {
     const selectedPet = userPets.find(pet => pet.id === petId);
 
@@ -68,27 +141,36 @@ const PetServicesPage = ({ user }) => {
   const handleModeSelection = (mode) => {
     setBookingMode(mode);
     if (mode === 'manual') {
-      // Reset form for manual entry
+      // Reset form for manual entry but keep email and mobile
       setBookingData({
         petName: '',
         petType: '',
         petAge: '',
+        email: bookingData.email,
+        mobileNumber: bookingData.mobileNumber,
         startDate: bookingData.startDate,
         endDate: bookingData.endDate,
         specialInstructions: bookingData.specialInstructions
       });
       setSelectedPetId('');
     }
+    setValidationErrors({});
   };
 
   const resetBookingModal = () => {
     setSelectedCenter(null);
     setBookingMode(null);
     setSelectedPetId('');
+    setValidationErrors({});
+    // Reset form but keep auto-filled email and mobile
+    const emailToKeep = user?.email || '';
+    const mobileToKeep = userProfile?.mobileNumber || '';
     setBookingData({
       petName: '',
       petType: '',
       petAge: '',
+      email: emailToKeep,
+      mobileNumber: mobileToKeep,
       startDate: '',
       endDate: '',
       specialInstructions: ''
@@ -137,6 +219,11 @@ const PetServicesPage = ({ user }) => {
       return;
     }
 
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -154,6 +241,8 @@ const PetServicesPage = ({ user }) => {
         petName: bookingData.petName,
         petType: bookingData.petType,
         petAge: bookingData.petAge,
+        email: bookingData.email,
+        mobileNumber: bookingData.mobileNumber,
         startDate: bookingData.startDate,
         endDate: bookingData.endDate,
         specialInstructions: bookingData.specialInstructions,
@@ -356,6 +445,7 @@ const PetServicesPage = ({ user }) => {
                       } else {
                         setBookingMode(null);
                       }
+                      setValidationErrors({});
                     }}
                     disabled={loading}
                   >
@@ -414,6 +504,56 @@ const PetServicesPage = ({ user }) => {
                       />
                       {bookingMode === 'existing' && (
                         <small className="help-text">Auto-filled</small>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Email Address *</label>
+                      <input
+                        type="email"
+                        value={bookingData.email}
+                        onChange={(e) => {
+                          setBookingData({ ...bookingData, email: e.target.value });
+                          if (validationErrors.email) {
+                            setValidationErrors({ ...validationErrors, email: '' });
+                          }
+                        }}
+                        required
+                        disabled={loading}
+                        placeholder="Enter your email"
+                        className={validationErrors.email ? 'input-error' : ''}
+                        pattern="[^\s@]+@[^\s@]+\.[^\s@]+"
+                        title="Please enter a valid email address (e.g., user@example.com)"
+                      />
+                      {validationErrors.email && (
+                        <small className="error-text">{validationErrors.email}</small>
+                      )}
+                      {!validationErrors.email && userProfile?.mobileNumber && (
+                        <small className="help-text">Auto-filled from profile (editable)</small>
+                      )}
+                    </div>
+
+                    <div className="form-group">
+                      <label>Mobile Number *</label>
+                      <input
+                        type="tel"
+                        value={bookingData.mobileNumber}
+                        onChange={handleMobileNumberChange}
+                        required
+                        disabled={loading}
+                        placeholder="Enter 10-digit mobile number"
+                        className={validationErrors.mobileNumber ? 'input-error' : ''}
+                        pattern="[6-9]\d{9}"
+                        maxLength="10"
+                        title="Please enter a valid 10-digit mobile number starting with 6-9"
+                      />
+                      {validationErrors.mobileNumber && (
+                        <small className="error-text">{validationErrors.mobileNumber}</small>
+                      )}
+                      {!validationErrors.mobileNumber && userProfile?.mobileNumber && (
+                        <small className="help-text">Auto-filled from profile (editable)</small>
                       )}
                     </div>
                   </div>
