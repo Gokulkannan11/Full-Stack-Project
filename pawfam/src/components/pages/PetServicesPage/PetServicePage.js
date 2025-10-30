@@ -483,8 +483,6 @@ const PetServicesPage = ({ user }) => {
                         <option value="">Select Pet Type</option>
                         <option value="Dog">Dog</option>
                         <option value="Cat">Cat</option>
-                        <option value="Bird">Bird</option>
-                        <option value="Other">Other</option>
                       </select>
                       {bookingMode === 'existing' && (
                         <small className="help-text">Auto-filled</small>
