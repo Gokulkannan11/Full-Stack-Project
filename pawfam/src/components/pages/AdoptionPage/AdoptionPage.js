@@ -20,6 +20,8 @@ const AdoptionPage = ({ user }) => {
   });
   const [loading, setLoading] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
 
   // Fetch user profile data on component mount
   useEffect(() => {
@@ -27,6 +29,15 @@ const AdoptionPage = ({ user }) => {
       fetchUserProfile();
     }
   }, [user]);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchKeyword);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchKeyword]);
 
   const fetchUserProfile = async () => {
     try {
@@ -68,6 +79,23 @@ const AdoptionPage = ({ user }) => {
       shelter: 'Cat Rescue Center'
     }
   ];
+
+  // Filter pets based on search keyword
+  const filteredPets = pets.filter(pet => {
+    if (!debouncedSearch) return true;
+
+    const searchLower = debouncedSearch.toLowerCase();
+    return (
+      pet.name.toLowerCase().includes(searchLower) ||
+      pet.type.toLowerCase().includes(searchLower) ||
+      pet.breed.toLowerCase().includes(searchLower) ||
+      pet.age.toLowerCase().includes(searchLower) ||
+      pet.gender.toLowerCase().includes(searchLower) ||
+      pet.size.toLowerCase().includes(searchLower) ||
+      pet.shelter.toLowerCase().includes(searchLower) ||
+      pet.description.toLowerCase().includes(searchLower)
+    );
+  });
 
   const handleAdoptionSubmit = async (e) => {
     e.preventDefault();
@@ -173,6 +201,27 @@ const AdoptionPage = ({ user }) => {
         </div>
       )}
 
+      <div className="search-filter-section">
+        <div className="search-bar-container">
+          <input
+            type="text"
+            className="search-input"
+            placeholder="Search pets by name, breed, type, shelter..."
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+          />
+          {searchKeyword && (
+            <button
+              className="clear-search-btn"
+              onClick={() => setSearchKeyword('')}
+              title="Clear search"
+            >
+              ×
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="adoption-filters">
         <div className="filter-group">
           <label>Type:</label>
@@ -205,45 +254,52 @@ const AdoptionPage = ({ user }) => {
       </div>
 
       <div className="pets-grid">
-        {pets.map(pet => (
-          <div key={pet.id} className="pet-card">
-            <div className="pet-image">
-              <img src={pet.image} alt={pet.name} />
-              <div className="pet-status">{pet.status}</div>
-            </div>
-            <div className="pet-info">
-              <h3>{pet.name}</h3>
-              <div className="pet-details">
-                <div className="detail-item">
-                  <strong>Type:</strong> {pet.type}
-                </div>
-                <div className="detail-item">
-                  <strong>Breed:</strong> {pet.breed}
-                </div>
-                <div className="detail-item">
-                  <strong>Age:</strong> {pet.age}
-                </div>
-                <div className="detail-item">
-                  <strong>Gender:</strong> {pet.gender}
-                </div>
-                <div className="detail-item">
-                  <strong>Size:</strong> {pet.size}
-                </div>
-                <div className="detail-item">
-                  <strong>Shelter:</strong> {pet.shelter}
-                </div>
-              </div>
-              <p className="pet-description">{pet.description}</p>
-              <button
-                className="meet-pet-btn"
-                onClick={() => handleMeetPet(pet)}
-                disabled={!user}
-              >
-                {user ? `Meet ${pet.name}` : 'Login to Adopt'}
-              </button>
-            </div>
+        {filteredPets.length === 0 ? (
+          <div className="no-results">
+            <p>No pets found matching "{debouncedSearch}"</p>
+            <button onClick={() => setSearchKeyword('')}>Clear Search</button>
           </div>
-        ))}
+        ) : (
+          filteredPets.map(pet => (
+            <div key={pet.id} className="pet-card">
+              <div className="pet-image">
+                <img src={pet.image} alt={pet.name} />
+                <div className="pet-status">{pet.status}</div>
+              </div>
+              <div className="pet-info">
+                <h3>{pet.name}</h3>
+                <div className="pet-details">
+                  <div className="detail-item">
+                    <strong>Type:</strong> {pet.type}
+                  </div>
+                  <div className="detail-item">
+                    <strong>Breed:</strong> {pet.breed}
+                  </div>
+                  <div className="detail-item">
+                    <strong>Age:</strong> {pet.age}
+                  </div>
+                  <div className="detail-item">
+                    <strong>Gender:</strong> {pet.gender}
+                  </div>
+                  <div className="detail-item">
+                    <strong>Size:</strong> {pet.size}
+                  </div>
+                  <div className="detail-item">
+                    <strong>Shelter:</strong> {pet.shelter}
+                  </div>
+                </div>
+                <p className="pet-description">{pet.description}</p>
+                <button
+                  className="meet-pet-btn"
+                  onClick={() => handleMeetPet(pet)}
+                  disabled={!user}
+                >
+                  {user ? `Meet ${pet.name}` : 'Login to Adopt'}
+                </button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Adoption Form Modal */}

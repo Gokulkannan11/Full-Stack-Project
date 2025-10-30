@@ -17,6 +17,8 @@ const PetServicesPage = ({ user }) => {
   const [petsLoading, setPetsLoading] = useState(false);
   const [bookingMode, setBookingMode] = useState(null); // 'existing' or 'manual'
   const [selectedPetId, setSelectedPetId] = useState('');
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
 
   // Fetch user's pets when component mounts
   useEffect(() => {
@@ -24,6 +26,15 @@ const PetServicesPage = ({ user }) => {
       fetchUserPets();
     }
   }, [user]);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchKeyword);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchKeyword]);
 
   const fetchUserPets = async () => {
     try {
@@ -106,6 +117,18 @@ const PetServicesPage = ({ user }) => {
     }
   ];
 
+  // Filter daycare centers based on search keyword
+  const filteredCenters = daycareCenters.filter(center => {
+    if (!debouncedSearch) return true;
+
+    const searchLower = debouncedSearch.toLowerCase();
+    return (
+      center.name.toLowerCase().includes(searchLower) ||
+      center.location.toLowerCase().includes(searchLower) ||
+      center.services.some(service => service.toLowerCase().includes(searchLower))
+    );
+  });
+
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
 
@@ -161,37 +184,63 @@ const PetServicesPage = ({ user }) => {
         </div>
       )}
 
+      <div className="search-bar-container">
+        <input
+          type="text"
+          className="search-input"
+          placeholder="Search daycare centers by name, location, services..."
+          value={searchKeyword}
+          onChange={(e) => setSearchKeyword(e.target.value)}
+        />
+        {searchKeyword && (
+          <button
+            className="clear-search-btn"
+            onClick={() => setSearchKeyword('')}
+            title="Clear search"
+          >
+            ×
+          </button>
+        )}
+      </div>
+
       <div className="centers-grid">
-        {daycareCenters.map(center => (
-          <div key={center.id} className="center-card">
-            <div className="center-image">
-              <img src={`https://placehold.co/300x200/3b82f6/ffffff?text=${encodeURIComponent(center.name)}`} alt={center.name} />
-            </div>
-            <div className="center-info">
-              <h3>{center.name}</h3>
-              <p className="center-location">{center.location}</p>
-              <div className="center-rating">
-                <span className="rating">⭐ {center.rating}</span>
-                <span className="price">₹{center.pricePerDay}/day</span>
-              </div>
-              <div className="center-services">
-                <strong>Services:</strong>
-                <div className="service-tags">
-                  {center.services.map(service => (
-                    <span key={service} className="service-tag">{service}</span>
-                  ))}
-                </div>
-              </div>
-              <button
-                className="book-btn"
-                onClick={() => setSelectedCenter(center)}
-                disabled={!user}
-              >
-                {user ? 'Book Now' : 'Login to Book'}
-              </button>
-            </div>
+        {filteredCenters.length === 0 ? (
+          <div className="no-results">
+            <p>No daycare centers found matching "{debouncedSearch}"</p>
+            <button onClick={() => setSearchKeyword('')}>Clear Search</button>
           </div>
-        ))}
+        ) : (
+          filteredCenters.map(center => (
+            <div key={center.id} className="center-card">
+              <div className="center-image">
+                <img src={`https://placehold.co/300x200/3b82f6/ffffff?text=${encodeURIComponent(center.name)}`} alt={center.name} />
+              </div>
+              <div className="center-info">
+                <h3>{center.name}</h3>
+                <p className="center-location">{center.location}</p>
+                <div className="center-rating">
+                  <span className="rating">⭐ {center.rating}</span>
+                  <span className="price">₹{center.pricePerDay}/day</span>
+                </div>
+                <div className="center-services">
+                  <strong>Services:</strong>
+                  <div className="service-tags">
+                    {center.services.map(service => (
+                      <span key={service} className="service-tag">{service}</span>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  className="book-btn"
+                  onClick={() => setSelectedCenter(center)}
+                  disabled={!user}
+                >
+                  {user ? 'Book Now' : 'Login to Book'}
+                </button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Booking Modal */}

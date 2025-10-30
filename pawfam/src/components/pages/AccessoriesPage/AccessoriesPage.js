@@ -20,16 +20,27 @@ const AccessoriesPage = ({ user }) => {
     cvv: ''
   });
   const [loading, setLoading] = useState(false);
-  
-  const { 
-    cartItems, 
-    addToCart, 
-    removeFromCart, 
-    updateQuantity, 
-    getCartTotal, 
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  const {
+    cartItems,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    getCartTotal,
     getCartItemsCount,
-    clearCart 
+    clearCart
   } = useCart();
+
+  // Debounce search input
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchKeyword);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchKeyword]);
 
   // Mock products data
   const products = [
@@ -80,7 +91,22 @@ const AccessoriesPage = ({ user }) => {
   ];
 
   const filteredProducts = products
-    .filter(product => selectedCategory === 'all' || product.category === selectedCategory)
+    .filter(product => {
+      // Filter by category
+      const categoryMatch = selectedCategory === 'all' || product.category === selectedCategory;
+
+      // Filter by search keyword
+      if (!debouncedSearch) return categoryMatch;
+
+      const searchLower = debouncedSearch.toLowerCase();
+      const searchMatch = (
+        product.name.toLowerCase().includes(searchLower) ||
+        product.description.toLowerCase().includes(searchLower) ||
+        product.category.toLowerCase().includes(searchLower)
+      );
+
+      return categoryMatch && searchMatch;
+    })
     .sort((a, b) => {
       switch (sortBy) {
         case 'price-low': return a.price - b.price;
@@ -92,14 +118,14 @@ const AccessoriesPage = ({ user }) => {
 
   const handleCheckoutSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!user) {
       alert('Please login to complete your order');
       return;
     }
 
     setLoading(true);
-    
+
     try {
       const orderPayload = {
         items: cartItems.map(item => ({
@@ -126,7 +152,7 @@ const AccessoriesPage = ({ user }) => {
       };
 
       await productsAPI.createOrder(orderPayload);
-      
+
       alert('Order placed successfully! Thank you for your purchase.');
       setShowCheckout(false);
       clearCart();
@@ -144,7 +170,7 @@ const AccessoriesPage = ({ user }) => {
     } catch (error) {
       alert(error.response?.data?.message || 'Error placing order');
     }
-    
+
     setLoading(false);
   };
 
@@ -169,6 +195,25 @@ const AccessoriesPage = ({ user }) => {
         </div>
       )}
 
+      <div className="search-bar-container">
+        <input
+          type="text"
+          className="search-input"
+          placeholder="Search products by name, description, category..."
+          value={searchKeyword}
+          onChange={(e) => setSearchKeyword(e.target.value)}
+        />
+        {searchKeyword && (
+          <button
+            className="clear-search-btn"
+            onClick={() => setSearchKeyword('')}
+            title="Clear search"
+          >
+            ×
+          </button>
+        )}
+      </div>
+
       <div className="accessories-controls">
         <div className="category-filters">
           {categories.map(category => (
@@ -192,8 +237,8 @@ const AccessoriesPage = ({ user }) => {
           </select>
         </div>
 
-        <button 
-          className="cart-toggle" 
+        <button
+          className="cart-toggle"
           onClick={() => setShowCart(true)}
           disabled={!user}
         >
@@ -202,28 +247,38 @@ const AccessoriesPage = ({ user }) => {
       </div>
 
       <div className="products-grid">
-        {filteredProducts.map(product => (
-          <div key={product.id} className="product-card">
-            <div className="product-image">
-              <img src={product.image} alt={product.name} />
-            </div>
-            <div className="product-info">
-              <h3>{product.name}</h3>
-              <p className="product-description">{product.description}</p>
-              <div className="product-rating">
-                ⭐ {product.rating}
-              </div>
-              <div className="product-price">₹{product.price}</div>
-              <button 
-                className="add-to-cart-btn"
-                onClick={() => addToCart(product)}
-                disabled={!user}
-              >
-                {user ? 'Add to Cart' : 'Login to Purchase'}
-              </button>
-            </div>
+        {filteredProducts.length === 0 ? (
+          <div className="no-results">
+            <p>No products found matching your criteria</p>
+            <button onClick={() => {
+              setSearchKeyword('');
+              setSelectedCategory('all');
+            }}>Clear Filters</button>
           </div>
-        ))}
+        ) : (
+          filteredProducts.map(product => (
+            <div key={product.id} className="product-card">
+              <div className="product-image">
+                <img src={product.image} alt={product.name} />
+              </div>
+              <div className="product-info">
+                <h3>{product.name}</h3>
+                <p className="product-description">{product.description}</p>
+                <div className="product-rating">
+                  ⭐ {product.rating}
+                </div>
+                <div className="product-price">₹{product.price}</div>
+                <button
+                  className="add-to-cart-btn"
+                  onClick={() => addToCart(product)}
+                  disabled={!user}
+                >
+                  {user ? 'Add to Cart' : 'Login to Purchase'}
+                </button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Shopping Cart Sidebar */}
@@ -231,8 +286,8 @@ const AccessoriesPage = ({ user }) => {
         <div className="cart-sidebar">
           <div className="cart-header">
             <h3>Shopping Cart</h3>
-            <button 
-              className="close-cart" 
+            <button
+              className="close-cart"
               onClick={() => setShowCart(false)}
               disabled={loading}
             >
@@ -250,14 +305,14 @@ const AccessoriesPage = ({ user }) => {
                     <h4>{item.name}</h4>
                     <p>₹{item.price}</p>
                     <div className="quantity-controls">
-                      <button 
+                      <button
                         onClick={() => updateQuantity(item.id, item.quantity - 1)}
                         disabled={loading}
                       >
                         -
                       </button>
                       <span>{item.quantity}</span>
-                      <button 
+                      <button
                         onClick={() => updateQuantity(item.id, item.quantity + 1)}
                         disabled={loading}
                       >
@@ -265,7 +320,7 @@ const AccessoriesPage = ({ user }) => {
                       </button>
                     </div>
                   </div>
-                  <button 
+                  <button
                     className="remove-item"
                     onClick={() => removeFromCart(item.id)}
                     disabled={loading}
@@ -281,7 +336,7 @@ const AccessoriesPage = ({ user }) => {
               <div className="cart-total">
                 Total: ₹{getCartTotal().toFixed(2)}
               </div>
-              <button 
+              <button
                 className="checkout-btn"
                 onClick={() => {
                   setShowCart(false);
@@ -302,7 +357,7 @@ const AccessoriesPage = ({ user }) => {
           <div className="checkout-form-container">
             <div className="checkout-header">
               <h2>Checkout</h2>
-              <button 
+              <button
                 onClick={() => setShowCheckout(false)}
                 disabled={loading}
               >
@@ -439,8 +494,8 @@ const AccessoriesPage = ({ user }) => {
                 </div>
               </div>
 
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="place-order-btn"
                 disabled={loading}
               >
