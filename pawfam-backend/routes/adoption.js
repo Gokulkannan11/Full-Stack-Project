@@ -131,6 +131,75 @@ router.get('/applications/:id', auth, async (req, res) => {
   }
 });
 
+// UPDATE ADOPTION APPLICATION - NEW ENDPOINT
+router.put('/applications/:id', auth, async (req, res) => {
+  try {
+    const {
+      personalInfo,
+      experience,
+      visitSchedule,
+      adoptionReason
+    } = req.body;
+
+    // Find application
+    const application = await AdoptionApplication.findOne({
+      _id: req.params.id,
+      user: req.user._id
+    });
+
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+
+    // Check if application can be edited
+    if (application.status === 'approved' || application.status === 'rejected') {
+      return res.status(400).json({
+        message: 'Cannot edit an application that has been approved or rejected'
+      });
+    }
+
+    // Update personal info if provided
+    if (personalInfo) {
+      if (personalInfo.fullName) application.personalInfo.fullName = personalInfo.fullName;
+      if (personalInfo.email) application.personalInfo.email = personalInfo.email;
+      if (personalInfo.phone) application.personalInfo.phone = personalInfo.phone;
+      if (personalInfo.address) application.personalInfo.address = personalInfo.address;
+    }
+
+    // Update experience if provided
+    if (experience) {
+      if (experience.level) application.experience.level = experience.level;
+      if (experience.details !== undefined) application.experience.details = experience.details;
+      if (experience.otherPets) application.experience.otherPets = experience.otherPets;
+      if (experience.otherPetsDetails !== undefined) application.experience.otherPetsDetails = experience.otherPetsDetails;
+    }
+
+    // Update visit schedule if provided
+    if (visitSchedule) {
+      if (visitSchedule.date) application.visitSchedule.date = new Date(visitSchedule.date);
+      if (visitSchedule.time) application.visitSchedule.time = visitSchedule.time;
+    }
+
+    // Update adoption reason if provided
+    if (adoptionReason !== undefined) {
+      application.adoptionReason = adoptionReason;
+    }
+
+    await application.save();
+
+    res.json({
+      message: 'Application updated successfully',
+      application
+    });
+  } catch (error) {
+    console.error('Update application error:', error);
+    res.status(500).json({
+      message: 'Server error updating application',
+      error: error.message
+    });
+  }
+});
+
 // Update application status (admin only - you can add admin middleware later)
 router.patch('/applications/:id/status', auth, async (req, res) => {
   try {
@@ -157,6 +226,42 @@ router.patch('/applications/:id/status', auth, async (req, res) => {
   } catch (error) {
     console.error('Update status error:', error);
     res.status(500).json({ message: 'Server error while updating status' });
+  }
+});
+
+// REVOKE (CANCEL) APPLICATION - NEW ENDPOINT
+router.patch('/applications/:id/revoke', auth, async (req, res) => {
+  try {
+    const application = await AdoptionApplication.findOne({
+      _id: req.params.id,
+      user: req.user._id
+    });
+
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+
+    // Check if application can be revoked
+    if (application.status === 'approved' || application.status === 'rejected') {
+      return res.status(400).json({
+        message: 'Cannot revoke an application that has been approved or rejected'
+      });
+    }
+
+    // Set status to rejected (cancelled)
+    application.status = 'rejected';
+    await application.save();
+
+    res.json({
+      message: 'Application revoked successfully',
+      application
+    });
+  } catch (error) {
+    console.error('Revoke application error:', error);
+    res.status(500).json({
+      message: 'Server error revoking application',
+      error: error.message
+    });
   }
 });
 

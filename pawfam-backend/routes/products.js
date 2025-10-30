@@ -20,9 +20,9 @@ router.post('/orders', auth, async (req, res) => {
       items,
       shippingAddress,
       paymentInfo: {
-        cardNumber: paymentInfo.cardNumber ? '' + paymentInfo.cardNumber.slice(-4) : '',
+        cardNumber: paymentInfo.cardNumber ? '****' + paymentInfo.cardNumber.slice(-4) : '',
         expiryDate: paymentInfo.expiryDate,
-        cvv: '*' // Never store actual CVV
+        cvv: '***' // Never store actual CVV
       },
       totalAmount,
       status: 'pending'
@@ -89,6 +89,68 @@ router.get('/orders/:id', auth, async (req, res) => {
   }
 });
 
+// UPDATE ORDER SHIPPING ADDRESS - NEW ENDPOINT
+router.put('/orders/:id/address', auth, async (req, res) => {
+  try {
+    const { shippingAddress } = req.body;
+
+    // Validate shipping address
+    if (!shippingAddress || !shippingAddress.fullName || !shippingAddress.email || 
+        !shippingAddress.address || !shippingAddress.city || 
+        !shippingAddress.state || !shippingAddress.zipCode) {
+      return res.status(400).json({
+        message: 'Please provide complete shipping address'
+      });
+    }
+
+    // Find order
+    const order = await ProductOrder.findOne({
+      _id: req.params.id,
+      user: req.user._id
+    });
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Check if order can be edited
+    if (order.status === 'delivered' || order.status === 'cancelled') {
+      return res.status(400).json({
+        message: 'Cannot edit an order that is delivered or cancelled'
+      });
+    }
+
+    if (order.status === 'shipped') {
+      return res.status(400).json({
+        message: 'Cannot edit an order that has already been shipped'
+      });
+    }
+
+    // Update shipping address
+    order.shippingAddress = {
+      fullName: shippingAddress.fullName,
+      email: shippingAddress.email,
+      address: shippingAddress.address,
+      city: shippingAddress.city,
+      state: shippingAddress.state,
+      zipCode: shippingAddress.zipCode
+    };
+
+    await order.save();
+
+    res.json({
+      message: 'Shipping address updated successfully',
+      order
+    });
+  } catch (error) {
+    console.error('Update address error:', error);
+    res.status(500).json({
+      message: 'Server error updating address',
+      error: error.message
+    });
+  }
+});
+
 // Update order status (for admin/vendor)
 router.patch('/orders/:id/status', auth, async (req, res) => {
   try {
@@ -121,7 +183,7 @@ router.patch('/orders/:id/status', auth, async (req, res) => {
   }
 });
 
-// Cancel order
+// Cancel order - UPDATED
 router.patch('/orders/:id/cancel', auth, async (req, res) => {
   try {
     const order = await ProductOrder.findOne({
@@ -157,6 +219,37 @@ router.patch('/orders/:id/cancel', auth, async (req, res) => {
     res.status(500).json({ 
       message: 'Server error cancelling order',
       error: error.message 
+    });
+  }
+});
+
+// DELETE ORDER - NEW ENDPOINT
+router.delete('/orders/:id', auth, async (req, res) => {
+  try {
+    const order = await ProductOrder.findOne({
+      _id: req.params.id,
+      user: req.user._id
+    });
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Delete the order
+    await ProductOrder.findByIdAndDelete(req.params.id);
+
+    res.json({
+      message: 'Order deleted successfully',
+      deletedOrder: {
+        id: order._id,
+        totalAmount: order.totalAmount
+      }
+    });
+  } catch (error) {
+    console.error('Delete order error:', error);
+    res.status(500).json({
+      message: 'Server error deleting order',
+      error: error.message
     });
   }
 });

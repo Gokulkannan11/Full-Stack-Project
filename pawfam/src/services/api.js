@@ -92,6 +92,18 @@ export const productsAPI = {
     const response = await API.get('/products/orders');
     return response.data;
   },
+  updateOrderAddress: async (orderId, shippingAddress) => {
+    const response = await API.put(`/products/orders/${orderId}/address`, { shippingAddress });
+    return response.data;
+  },
+  cancelOrder: async (orderId) => {
+    const response = await API.patch(`/products/orders/${orderId}/cancel`);
+    return response.data;
+  },
+  deleteOrder: async (orderId) => {
+    const response = await API.delete(`/products/orders/${orderId}`);
+    return response.data;
+  },
 };
 
 // Adoption API
@@ -102,6 +114,18 @@ export const adoptionAPI = {
   },
   getApplications: async () => {
     const response = await API.get('/adoption/applications');
+    return response.data;
+  },
+  updateApplication: async (applicationId, applicationData) => {
+    const response = await API.put(`/adoption/applications/${applicationId}`, applicationData);
+    return response.data;
+  },
+  revokeApplication: async (applicationId) => {
+    const response = await API.patch(`/adoption/applications/${applicationId}/revoke`);
+    return response.data;
+  },
+  deleteApplication: async (applicationId) => {
+    const response = await API.delete(`/adoption/applications/${applicationId}`);
     return response.data;
   },
 };
