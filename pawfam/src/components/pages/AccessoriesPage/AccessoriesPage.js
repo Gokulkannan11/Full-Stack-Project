@@ -3,11 +3,48 @@ import { useCart } from '../../../context/CartContext';
 import { productsAPI } from '../../../services/api';
 import './AccessoriesPage.css';
 
+// India states list
+const INDIAN_STATES = [
+  { code: 'AP', name: 'Andhra Pradesh' },
+  { code: 'AR', name: 'Arunachal Pradesh' },
+  { code: 'AS', name: 'Assam' },
+  { code: 'BR', name: 'Bihar' },
+  { code: 'CG', name: 'Chhattisgarh' },
+  { code: 'GA', name: 'Goa' },
+  { code: 'GJ', name: 'Gujarat' },
+  { code: 'HR', name: 'Haryana' },
+  { code: 'HP', name: 'Himachal Pradesh' },
+  { code: 'JH', name: 'Jharkhand' },
+  { code: 'KA', name: 'Karnataka' },
+  { code: 'KL', name: 'Kerala' },
+  { code: 'MP', name: 'Madhya Pradesh' },
+  { code: 'MH', name: 'Maharashtra' },
+  { code: 'MN', name: 'Manipur' },
+  { code: 'ML', name: 'Meghalaya' },
+  { code: 'MZ', name: 'Mizoram' },
+  { code: 'NL', name: 'Nagaland' },
+  { code: 'OR', name: 'Odisha' },
+  { code: 'PB', name: 'Punjab' },
+  { code: 'RJ', name: 'Rajasthan' },
+  { code: 'SK', name: 'Sikkim' },
+  { code: 'TN', name: 'Tamil Nadu' },
+  { code: 'TG', name: 'Telangana' },
+  { code: 'TR', name: 'Tripura' },
+  { code: 'UP', name: 'Uttar Pradesh' },
+  { code: 'UT', name: 'Uttarakhand' },
+  { code: 'WB', name: 'West Bengal' },
+  { code: 'DL', name: 'Delhi' }
+];
+
 const AccessoriesPage = ({ user }) => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('name');
   const [showCart, setShowCart] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD for min date
+  const TIME_MIN = '17:00';
+  const TIME_MAX = '19:00';
+  
   const [checkoutData, setCheckoutData] = useState({
     fullName: '',
     email: '',
@@ -15,9 +52,15 @@ const AccessoriesPage = ({ user }) => {
     city: '',
     state: '',
     zipCode: '',
+    paymentMethod: 'card',
     cardNumber: '',
     expiryDate: '',
-    cvv: ''
+    cvv: '',
+    upiId: '',
+    deliveryDate: today,
+    deliveryTime: '17:30',
+    extras: { giftWrap: false, includeReceipt: false },
+    priorityDelivery: false
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -132,12 +175,23 @@ const AccessoriesPage = ({ user }) => {
       return '';
     };
 
-    // required checks
-    ['fullName', 'email', 'address', 'city', 'state', 'zipCode', 'cardNumber', 'expiryDate', 'cvv'].forEach(field => {
-      if (!checkoutData[field] || !checkoutData[field].toString().trim()) {
+    // Basic required fields
+    ['fullName', 'email', 'address', 'city', 'state', 'zipCode', 'deliveryDate', 'deliveryTime'].forEach(field => {
+      const val = checkoutData[field];
+      if (!val || (typeof val === 'string' && !val.toString().trim())) {
         newErrors[field] = `${field} is required`;
       }
     });
+    
+    // Payment fields required only when card is selected
+    if (checkoutData.paymentMethod === 'card') {
+      ['cardNumber', 'expiryDate', 'cvv'].forEach(field => {
+        const val = checkoutData[field];
+        if (!val || (typeof val === 'string' && !val.toString().trim())) {
+          newErrors[field] = `${field} is required`;
+        }
+      });
+    }
 
     // field-specific validations (reuse same rules as backend)
     const alphaSpace = /^[A-Za-z\s]+$/;
@@ -189,11 +243,21 @@ const AccessoriesPage = ({ user }) => {
           state: checkoutData.state,
           zipCode: checkoutData.zipCode
         },
-        paymentInfo: {
+        deliveryPreferences: {
+          date: checkoutData.deliveryDate,
+          time: checkoutData.deliveryTime,
+          extras: checkoutData.extras,
+          priorityDelivery: checkoutData.priorityDelivery
+        },
+        paymentInfo: checkoutData.paymentMethod === 'card' ? {
+          method: 'card',
           cardNumber: sanitizedCard,
           expiryDate: checkoutData.expiryDate,
           cvv: sanitizedCvv
-        },
+        } : checkoutData.paymentMethod === 'upi' ? {
+          method: 'upi',
+          upiId: checkoutData.upiId
+        } : { method: checkoutData.paymentMethod },
         totalAmount: Number(getCartTotal())
       };
 
@@ -212,9 +276,14 @@ const AccessoriesPage = ({ user }) => {
         city: '',
         state: '',
         zipCode: '',
+        paymentMethod: 'card',
         cardNumber: '',
         expiryDate: '',
-        cvv: ''
+        cvv: '',
+        deliveryDate: today,
+        deliveryTime: '17:30',
+        extras: { giftWrap: false, includeReceipt: false },
+        priorityDelivery: false
       });
     } catch (error) {
       console.error('Order submission error:', error);
@@ -266,7 +335,27 @@ const AccessoriesPage = ({ user }) => {
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
+    
+    // Handle checkbox inputs differently
+    if (name.startsWith('extras.')) {
+      const key = name.split('.')[1];
+      setCheckoutData(prev => ({
+        ...prev,
+        extras: { ...prev.extras, [key]: checked }
+      }));
+      return;
+    }
+
+    if (type === 'checkbox' && name === 'priorityDelivery') {
+      setCheckoutData(prev => ({
+        ...prev,
+        [name]: checked
+      }));
+      return;
+    }
+
+    // For all other inputs
     setCheckoutData(prev => ({
       ...prev,
       [name]: value
@@ -324,6 +413,13 @@ const AccessoriesPage = ({ user }) => {
         if (!digits) next.cvv = 'CVV is required';
         else if (!/^\d{3}$/.test(digits)) next.cvv = 'CVV must be exactly 3 digits';
         else delete next.cvv;
+      }
+
+      if (name === 'upiId') {
+        if (!value || !value.toString().trim()) next.upiId = 'UPI ID is required';
+        else if (!/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z][a-zA-Z]{2,64}$/.test(value)) {
+          next.upiId = 'Invalid UPI ID format. Example: username@bank';
+        } else delete next.upiId;
       }
 
       return next;
@@ -557,32 +653,38 @@ const AccessoriesPage = ({ user }) => {
                   />
                   {errors.address && <div className="form-error">{errors.address}</div>}
                 </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>City *</label>
-                    <input
-                      type="text"
-                      name="city"
-                      value={checkoutData.city}
-                      onChange={handleInputChange}
-                      required
-                      disabled={loading}
-                    />
-                    {errors.city && <div className="form-error">{errors.city}</div>}
+                <div className="address-details">
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>State *</label>
+                      <select 
+                        name="state" 
+                        value={checkoutData.state} 
+                        onChange={handleInputChange} 
+                        required 
+                        disabled={loading}
+                      >
+                        <option value="">Select State</option>
+                        {INDIAN_STATES.map(s => (
+                          <option key={s.code} value={s.code}>{s.name}</option>
+                        ))}
+                      </select>
+                      {errors.state && <div className="form-error">{errors.state}</div>}
+                    </div>
+                    <div className="form-group">
+                      <label>City *</label>
+                      <input
+                        type="text"
+                        name="city"
+                        value={checkoutData.city}
+                        onChange={handleInputChange}
+                        required
+                        disabled={loading}
+                      />
+                      {errors.city && <div className="form-error">{errors.city}</div>}
+                    </div>
                   </div>
-                  <div className="form-group">
-                    <label>State *</label>
-                    <input
-                      type="text"
-                      name="state"
-                      value={checkoutData.state}
-                      onChange={handleInputChange}
-                      required
-                      disabled={loading}
-                    />
-                    {errors.state && <div className="form-error">{errors.state}</div>}
-                  </div>
-                  <div className="form-group">
+                  <div className="form-group zip-code">
                     <label>ZIP Code *</label>
                     <input
                       type="text"
@@ -598,48 +700,166 @@ const AccessoriesPage = ({ user }) => {
               </div>
 
               <div className="form-section">
-                <h3>Payment Information</h3>
-                <div className="form-group">
-                  <label>Card Number *</label>
-                  <input
-                    type="text"
-                    name="cardNumber"
-                    value={checkoutData.cardNumber}
-                    onChange={handleInputChange}
-                    placeholder="1234 5678 9012 3456"
-                    required
-                    disabled={loading}
-                  />
-                  {errors.cardNumber && <div className="form-error">{errors.cardNumber}</div>}
-                </div>
+                <h3>Delivery Preferences</h3>
                 <div className="form-row">
                   <div className="form-group">
-                    <label>Expiry Date *</label>
-                    <input
-                      type="text"
-                      name="expiryDate"
-                      value={checkoutData.expiryDate}
-                      onChange={handleInputChange}
-                      placeholder="MM/YY"
-                      required
-                      disabled={loading}
+                    <label>Preferred delivery date *</label>
+                    <input 
+                      type="date" 
+                      name="deliveryDate" 
+                      value={checkoutData.deliveryDate} 
+                      min={today}
+                      onChange={handleInputChange} 
+                      required 
+                      disabled={loading} 
                     />
-                    {errors.expiryDate && <div className="form-error">{errors.expiryDate}</div>}
+                    {errors.deliveryDate && <div className="form-error">{errors.deliveryDate}</div>}
                   </div>
                   <div className="form-group">
-                    <label>CVV *</label>
-                    <input
-                      type="text"
-                      name="cvv"
-                      value={checkoutData.cvv}
-                      onChange={handleInputChange}
-                      placeholder="123"
-                      required
-                      disabled={loading}
+                    <label>Preferred delivery time (evening only) *</label>
+                    <input 
+                      type="time" 
+                      name="deliveryTime" 
+                      value={checkoutData.deliveryTime} 
+                      min={TIME_MIN} 
+                      max={TIME_MAX}
+                      onChange={handleInputChange} 
+                      required 
+                      disabled={loading} 
                     />
-                    {errors.cvv && <div className="form-error">{errors.cvv}</div>}
+                    {errors.deliveryTime && <div className="form-error">{errors.deliveryTime}</div>}
                   </div>
                 </div>
+                <fieldset>
+                  <legend>Extras</legend>
+                  <label>
+                    <input 
+                      type="checkbox" 
+                      name="extras.giftWrap" 
+                      checked={checkoutData.extras.giftWrap} 
+                      onChange={handleInputChange} 
+                    /> 
+                    Gift wrap
+                  </label>
+                  <label style={{ marginLeft: '1rem' }}>
+                    <input 
+                      type="checkbox" 
+                      name="extras.includeReceipt" 
+                      checked={checkoutData.extras.includeReceipt} 
+                      onChange={handleInputChange} 
+                    /> 
+                    Include receipt
+                  </label>
+                </fieldset>
+                <label className="switch" style={{ marginTop: '0.75rem' }}>
+                  Priority delivery
+                  <input 
+                    type="checkbox" 
+                    name="priorityDelivery" 
+                    checked={checkoutData.priorityDelivery} 
+                    onChange={handleInputChange} 
+                  />
+                  <span className="slider" />
+                </label>
+              </div>
+
+              <div className="form-section">
+                <h3>Payment Information</h3>
+                <div className="payment-method-section">
+                  <h4>Preferred payment method *</h4>
+                  <div className="payment-options">
+                    <label className="payment-option">
+                      <input 
+                        type="radio" 
+                        name="paymentMethod" 
+                        value="card" 
+                        checked={checkoutData.paymentMethod === 'card'} 
+                        onChange={handleInputChange} 
+                      /> 
+                      <span className="payment-label">Credit/Debit Card</span>
+                    </label>
+                    <label className="payment-option">
+                      <input 
+                        type="radio" 
+                        name="paymentMethod" 
+                        value="upi" 
+                        checked={checkoutData.paymentMethod === 'upi'} 
+                        onChange={handleInputChange} 
+                      /> 
+                      <span className="payment-label">UPI</span>
+                    </label>
+                    <label className="payment-option">
+                      <input 
+                        type="radio" 
+                        name="paymentMethod" 
+                        value="cod" 
+                        checked={checkoutData.paymentMethod === 'cod'} 
+                        onChange={handleInputChange} 
+                      /> 
+                      <span className="payment-label">Cash on Delivery</span>
+                    </label>
+                  </div>
+                  {checkoutData.paymentMethod === 'upi' && (
+                    <div className="form-group upi-input">
+                      <label>UPI ID *</label>
+                      <input
+                        type="text"
+                        name="upiId"
+                        value={checkoutData.upiId || ''}
+                        onChange={handleInputChange}
+                        placeholder="username@bank"
+                        required
+                        disabled={loading}
+                      />
+                      {errors.upiId && <div className="form-error">{errors.upiId}</div>}
+                    </div>
+                  )}
+                </div>
+                {checkoutData.paymentMethod === 'card' && (
+                  <>
+                    <div className="form-group">
+                      <label>Card Number *</label>
+                      <input
+                        type="text"
+                        name="cardNumber"
+                        value={checkoutData.cardNumber}
+                        onChange={handleInputChange}
+                        placeholder="1234 5678 9012 3456"
+                        required
+                        disabled={loading}
+                      />
+                      {errors.cardNumber && <div className="form-error">{errors.cardNumber}</div>}
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Expiry Date *</label>
+                        <input
+                          type="text"
+                          name="expiryDate"
+                          value={checkoutData.expiryDate}
+                          onChange={handleInputChange}
+                          placeholder="MM/YY"
+                          required
+                          disabled={loading}
+                        />
+                        {errors.expiryDate && <div className="form-error">{errors.expiryDate}</div>}
+                      </div>
+                      <div className="form-group">
+                        <label>CVV *</label>
+                        <input
+                          type="text"
+                          name="cvv"
+                          value={checkoutData.cvv}
+                          onChange={handleInputChange}
+                          placeholder="123"
+                          required
+                          disabled={loading}
+                        />
+                        {errors.cvv && <div className="form-error">{errors.cvv}</div>}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="order-summary">
