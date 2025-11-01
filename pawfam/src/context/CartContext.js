@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useRef } from 'react';
 
 const CartContext = createContext();
 
@@ -12,6 +12,8 @@ export const useCart = () => {
 
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
+  const [toast, setToast] = useState({ visible: false, message: '' });
+  const toastTimerRef = useRef(null);
 
   const addToCart = (product) => {
     setCartItems(prevItems => {
@@ -23,6 +25,23 @@ export const CartProvider = ({ children }) => {
       }
       return [...prevItems, { ...product, quantity: 1 }];
     });
+
+    // Show toast/pop message when product is added
+    try {
+      // clear any existing timer
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+      setToast({ visible: true, message: `${product.name} added to cart` });
+      // auto-hide after 3 seconds
+      toastTimerRef.current = setTimeout(() => {
+        setToast({ visible: false, message: '' });
+        toastTimerRef.current = null;
+      }, 3000);
+    } catch (e) {
+      // swallow errors related to toast
+      console.error('Toast error', e);
+    }
   };
 
   const removeFromCart = (productId) => {
@@ -66,6 +85,26 @@ export const CartProvider = ({ children }) => {
   return (
     <CartContext.Provider value={value}>
       {children}
+
+      {/* Simple toast for cart additions */}
+      {toast.visible && (
+        <div className="cart-toast" role="status" aria-live="polite">
+          <span className="cart-toast-message">{toast.message}</span>
+          <button
+            className="toast-close"
+            aria-label="Close"
+            onClick={() => {
+              if (toastTimerRef.current) {
+                clearTimeout(toastTimerRef.current);
+                toastTimerRef.current = null;
+              }
+              setToast({ visible: false, message: '' });
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
     </CartContext.Provider>
   );
 };

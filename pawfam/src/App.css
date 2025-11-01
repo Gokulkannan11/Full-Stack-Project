@@ -83,3 +83,43 @@ body {
     display: none;
   }
 }
+
+/* Validation / error text defaults */
+.form-error,
+.error-text {
+  color: #dc3545; /* bootstrap-like danger */
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+.error-message {
+  color: #c33;
+}
+
+/* Cart toast */
+.cart-toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  background-color: #10b981; /* green */
+  color: white;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  z-index: 2000;
+  min-width: 200px;
+}
+.cart-toast-message {
+  font-weight: 600;
+}
+.toast-close {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.9);
+  font-size: 1.1rem;
+  cursor: pointer;
+  margin-left: auto;
+}

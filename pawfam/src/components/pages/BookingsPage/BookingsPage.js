@@ -36,6 +36,7 @@ const BookingsPage = ({ user }) => {
     state: '',
     zipCode: ''
   });
+  const [addressErrors, setAddressErrors] = useState({});
 
   // Edit modal state for adoption applications
   const [showAdoptionModal, setShowAdoptionModal] = useState(false);
@@ -255,10 +256,24 @@ const BookingsPage = ({ user }) => {
       ...prev,
       [name]: value
     }));
+    // clear or set inline validation for ZIP as user types
+    if (name === 'zipCode') {
+      setAddressErrors(prev => {
+           const next = { ...prev };
+        if (!value || !/^\d{6}$/.test(value)) next.zipCode = 'ZIP Code must be exactly 6 digits';
+        else delete next.zipCode;
+        return next;
+      });
+    }
   };
 
   const handleAddressFormSubmit = async (e) => {
     e.preventDefault();
+    // client-side validation: ZIP code must be numeric and exactly 6 digits
+    if (!addressFormData.zipCode || !/^\d{6}$/.test(addressFormData.zipCode)) {
+      setAddressErrors({ zipCode: 'ZIP Code must be exactly 6 digits' });
+      return;
+    }
 
     try {
       setLoading(true);
@@ -269,7 +284,21 @@ const BookingsPage = ({ user }) => {
       await fetchAllBookings();
     } catch (error) {
       console.error('Error updating address:', error);
-      alert(error.response?.data?.message || 'Failed to update delivery address');
+      const resp = error.response?.data;
+      if (resp) {
+        if (Array.isArray(resp.errors)) {
+          const apiErrors = {};
+          resp.errors.forEach(err => {
+            const parts = err.param ? err.param.split('.') : [];
+            const key = parts.length ? parts[parts.length - 1] : err.param;
+            if (key) apiErrors[key] = err.msg;
+          });
+          setAddressErrors(prev => ({ ...prev, ...apiErrors }));
+        }
+        alert(resp.message || 'Failed to update delivery address');
+      } else {
+        alert('Failed to update delivery address');
+      }
     } finally {
       setLoading(false);
     }
@@ -1074,8 +1103,9 @@ const BookingsPage = ({ user }) => {
                     required
                     disabled={loading}
                     placeholder="Enter ZIP code"
-                    maxLength="10"
+                    maxLength="6"
                   />
+                  {addressErrors.zipCode && <div className="form-error">{addressErrors.zipCode}</div>}
                 </div>
 
                 <div className="form-actions">

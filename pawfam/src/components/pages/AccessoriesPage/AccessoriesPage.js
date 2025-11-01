@@ -19,6 +19,7 @@ const AccessoriesPage = ({ user }) => {
     expiryDate: '',
     cvv: ''
   });
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -124,9 +125,54 @@ const AccessoriesPage = ({ user }) => {
       return;
     }
 
+    // final client-side validation before submitting
+    const newErrors = {};
+    const validateField = (name, value) => {
+      if (!value || !value.toString().trim()) return `${name} is required`;
+      return '';
+    };
+
+    // required checks
+    ['fullName', 'email', 'address', 'city', 'state', 'zipCode', 'cardNumber', 'expiryDate', 'cvv'].forEach(field => {
+      if (!checkoutData[field] || !checkoutData[field].toString().trim()) {
+        newErrors[field] = `${field} is required`;
+      }
+    });
+
+    // field-specific validations (reuse same rules as backend)
+    const alphaSpace = /^[A-Za-z\s]+$/;
+    if (checkoutData.fullName && !alphaSpace.test(checkoutData.fullName)) newErrors.fullName = 'Full Name must contain only letters and spaces';
+    if (checkoutData.city && !alphaSpace.test(checkoutData.city)) newErrors.city = 'City must contain only letters and spaces';
+    if (checkoutData.state && !alphaSpace.test(checkoutData.state)) newErrors.state = 'State must contain only letters and spaces';
+  if (checkoutData.zipCode && !/^\d{6}$/.test(checkoutData.zipCode)) newErrors.zipCode = 'ZIP Code must be exactly 6 digits';
+
+  const cardDigits = checkoutData.cardNumber ? checkoutData.cardNumber.replace(/\D/g, '') : '';
+  if (cardDigits && !/^\d{14,16}$/.test(cardDigits)) newErrors.cardNumber = 'Card Number must be 14 to 16 digits';
+
+    if (checkoutData.expiryDate && !/^\d{2}\/\d{2}$/.test(checkoutData.expiryDate)) newErrors.expiryDate = 'Expiry Date must be in MM/YY format';
+    else if (checkoutData.expiryDate) {
+      // additional month validation
+      const [mm] = checkoutData.expiryDate.split('/');
+      const monthNum = parseInt(mm, 10);
+      if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) newErrors.expiryDate = 'Expiry month must be between 01 and 12';
+    }
+
+    if (checkoutData.cvv && !/^\d{3}$/.test(checkoutData.cvv)) newErrors.cvv = 'CVV must be exactly 3 digits';
+
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      // Don't submit if validation errors
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     setLoading(true);
 
     try {
+      // sanitize card and cvv to digits-only before sending to backend
+      const sanitizedCard = checkoutData.cardNumber ? checkoutData.cardNumber.replace(/\D/g, '') : '';
+      const sanitizedCvv = checkoutData.cvv ? checkoutData.cvv.replace(/\D/g, '') : '';
+
       const orderPayload = {
         items: cartItems.map(item => ({
           productId: item.id.toString(),
@@ -144,12 +190,15 @@ const AccessoriesPage = ({ user }) => {
           zipCode: checkoutData.zipCode
         },
         paymentInfo: {
-          cardNumber: checkoutData.cardNumber,
+          cardNumber: sanitizedCard,
           expiryDate: checkoutData.expiryDate,
-          cvv: checkoutData.cvv
+          cvv: sanitizedCvv
         },
-        totalAmount: getCartTotal()
+        totalAmount: Number(getCartTotal())
       };
+
+      // log payload to help debugging in dev (will show masked card digits if needed)
+      console.log('Order payload (to be sent):', orderPayload);
 
       await productsAPI.createOrder(orderPayload);
 
@@ -168,7 +217,49 @@ const AccessoriesPage = ({ user }) => {
         cvv: ''
       });
     } catch (error) {
-      alert(error.response?.data?.message || 'Error placing order');
+      console.error('Order submission error:', error);
+      // If the API returned validation errors (express-validator) or mongoose errors, map them to the form
+      const resp = error.response?.data;
+  console.error('API response body:', resp);
+      if (resp) {
+        // Show a quick alert with API validation messages for easier debugging in dev
+        if (Array.isArray(resp.errors) && resp.errors.length) {
+          try {
+            const msgs = resp.errors.map(e => e.msg || JSON.stringify(e)).join('\n');
+            alert(`Server validation errors:\n${msgs}`);
+          } catch (e) {
+            alert('Server returned validation errors');
+          }
+        } else if (resp.message) {
+          alert(resp.message);
+        } else {
+          try { alert(JSON.stringify(resp)); } catch (e) { /* ignore */ }
+        }
+        // express-validator returns { errors: [ { msg, param, ... } ] }
+        if (Array.isArray(resp.errors)) {
+          const apiErrors = {};
+          resp.errors.forEach(errItem => {
+            // errItem.param may be 'shippingAddress.fullName' or 'paymentInfo.cardNumber'
+            const parts = errItem.param ? errItem.param.split('.') : [];
+            const key = parts.length ? parts[parts.length - 1] : errItem.param;
+            if (key) apiErrors[key] = errItem.msg;
+          });
+          setErrors(prev => ({ ...prev, ...apiErrors }));
+          // focus the first error (optional)
+          const firstKey = Object.keys(apiErrors)[0];
+          if (firstKey) {
+            const el = document.querySelector(`[name="${firstKey}"]`);
+            if (el) el.focus();
+          }
+        } else if (resp.message) {
+          alert(resp.message);
+        } else {
+          alert('Error placing order');
+        }
+      } else {
+        // No response -> network error
+        alert('Network error: could not reach the server. Please make sure the backend is running.');
+      }
     }
 
     setLoading(false);
@@ -180,6 +271,63 @@ const AccessoriesPage = ({ user }) => {
       ...prev,
       [name]: value
     }));
+
+    // immediate/inline validation for better UX
+    setErrors(prev => {
+      const next = { ...prev };
+      // validation rules
+      const alphaSpace = /^[A-Za-z\s]+$/;
+      if (name === 'fullName') {
+        if (!value || !value.toString().trim()) next.fullName = 'Full Name is required';
+        else if (!alphaSpace.test(value)) next.fullName = 'Full Name must contain only letters and spaces';
+        else delete next.fullName;
+      }
+
+      if (name === 'city') {
+        if (!value || !value.toString().trim()) next.city = 'City is required';
+        else if (!alphaSpace.test(value)) next.city = 'City must contain only letters and spaces';
+        else delete next.city;
+      }
+
+      if (name === 'state') {
+        if (!value || !value.toString().trim()) next.state = 'State is required';
+        else if (!alphaSpace.test(value)) next.state = 'State must contain only letters and spaces';
+        else delete next.state;
+      }
+
+      if (name === 'zipCode') {
+        if (!value || !value.toString().trim()) next.zipCode = 'ZIP Code is required';
+        else if (!/^\d{6}$/.test(value)) next.zipCode = 'ZIP Code must be exactly 6 digits';
+        else delete next.zipCode;
+      }
+
+      if (name === 'cardNumber') {
+        const digits = value.replace(/\D/g, '');
+        if (!digits) next.cardNumber = 'Card Number is required';
+        else if (!/^\d{14,16}$/.test(digits)) next.cardNumber = 'Card Number must be 14 to 16 digits';
+        else delete next.cardNumber;
+      }
+
+      if (name === 'expiryDate') {
+        if (!value || !value.toString().trim()) next.expiryDate = 'Expiry Date is required';
+        else if (!/^\d{2}\/\d{2}$/.test(value)) next.expiryDate = 'Expiry Date must be in MM/YY format';
+        else {
+          const [mm] = value.split('/');
+          const monthNum = parseInt(mm, 10);
+          if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) next.expiryDate = 'Expiry month must be between 01 and 12';
+          else delete next.expiryDate;
+        }
+      }
+
+      if (name === 'cvv') {
+        const digits = value.replace(/\D/g, '');
+        if (!digits) next.cvv = 'CVV is required';
+        else if (!/^\d{3}$/.test(digits)) next.cvv = 'CVV must be exactly 3 digits';
+        else delete next.cvv;
+      }
+
+      return next;
+    });
   };
 
   return (
@@ -191,7 +339,7 @@ const AccessoriesPage = ({ user }) => {
 
       {!user && (
         <div className="login-prompt">
-          <p>Please <a href="#" onClick={() => window.location.reload()}>login</a> to purchase products</p>
+          <p>Please <button className="link-like" onClick={() => window.location.reload()}>login</button> to purchase products</p>
         </div>
       )}
 
@@ -357,14 +505,18 @@ const AccessoriesPage = ({ user }) => {
           <div className="checkout-form-container">
             <div className="checkout-header">
               <h2>Checkout</h2>
+            </div>
+            <form onSubmit={handleCheckoutSubmit} className="checkout-form">
+              {/* Inner-close button inside the form (won't submit because type="button") */}
               <button
+                type="button"
+                className="form-close-button"
                 onClick={() => setShowCheckout(false)}
+                aria-label="Close checkout"
                 disabled={loading}
               >
                 ×
               </button>
-            </div>
-            <form onSubmit={handleCheckoutSubmit} className="checkout-form">
               <div className="form-section">
                 <h3>Shipping Information</h3>
                 <div className="form-row">
@@ -378,6 +530,7 @@ const AccessoriesPage = ({ user }) => {
                       required
                       disabled={loading}
                     />
+                    {errors.fullName && <div className="form-error">{errors.fullName}</div>}
                   </div>
                   <div className="form-group">
                     <label>Email *</label>
@@ -389,6 +542,7 @@ const AccessoriesPage = ({ user }) => {
                       required
                       disabled={loading}
                     />
+                    {errors.email && <div className="form-error">{errors.email}</div>}
                   </div>
                 </div>
                 <div className="form-group">
@@ -401,6 +555,7 @@ const AccessoriesPage = ({ user }) => {
                     required
                     disabled={loading}
                   />
+                  {errors.address && <div className="form-error">{errors.address}</div>}
                 </div>
                 <div className="form-row">
                   <div className="form-group">
@@ -413,6 +568,7 @@ const AccessoriesPage = ({ user }) => {
                       required
                       disabled={loading}
                     />
+                    {errors.city && <div className="form-error">{errors.city}</div>}
                   </div>
                   <div className="form-group">
                     <label>State *</label>
@@ -424,6 +580,7 @@ const AccessoriesPage = ({ user }) => {
                       required
                       disabled={loading}
                     />
+                    {errors.state && <div className="form-error">{errors.state}</div>}
                   </div>
                   <div className="form-group">
                     <label>ZIP Code *</label>
@@ -435,6 +592,7 @@ const AccessoriesPage = ({ user }) => {
                       required
                       disabled={loading}
                     />
+                    {errors.zipCode && <div className="form-error">{errors.zipCode}</div>}
                   </div>
                 </div>
               </div>
@@ -452,6 +610,7 @@ const AccessoriesPage = ({ user }) => {
                     required
                     disabled={loading}
                   />
+                  {errors.cardNumber && <div className="form-error">{errors.cardNumber}</div>}
                 </div>
                 <div className="form-row">
                   <div className="form-group">
@@ -465,6 +624,7 @@ const AccessoriesPage = ({ user }) => {
                       required
                       disabled={loading}
                     />
+                    {errors.expiryDate && <div className="form-error">{errors.expiryDate}</div>}
                   </div>
                   <div className="form-group">
                     <label>CVV *</label>
@@ -477,6 +637,7 @@ const AccessoriesPage = ({ user }) => {
                       required
                       disabled={loading}
                     />
+                    {errors.cvv && <div className="form-error">{errors.cvv}</div>}
                   </div>
                 </div>
               </div>
