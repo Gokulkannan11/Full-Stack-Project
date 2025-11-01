@@ -69,16 +69,21 @@ const ProfilePage = ({ user }) => {
     const validateForm = () => {
         const newErrors = {};
 
-        if (!formData.name || formData.name.trim().length < 2) {
-            newErrors.name = 'Name must be at least 2 characters';
+        if (!formData.name || formData.name.trim().length < 3) {
+            newErrors.name = 'Name must be at least 3 characters';
+        } else if (formData.name.trim().length > 50) {
+            newErrors.name = 'Name cannot exceed 50 characters';
         }
 
         if (!formData.gender) {
             newErrors.gender = 'Please select a gender';
         }
 
-        if (!/^[0-9]{10}$/.test(formData.mobileNumber)) {
-            newErrors.mobileNumber = 'Mobile number must be exactly 10 digits';
+        // Validate mobile number - must be exactly 10 digits and start with 6-9
+        if (!formData.mobileNumber) {
+            newErrors.mobileNumber = 'Mobile number is required';
+        } else if (!/^[6-9]\d{9}$/.test(formData.mobileNumber)) {
+            newErrors.mobileNumber = 'Mobile number must be 10 digits starting with 6-9';
         }
 
         if (!formData.residentialAddress || formData.residentialAddress.trim().length < 10) {
@@ -91,10 +96,21 @@ const ProfilePage = ({ user }) => {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+
+        // Special handling for mobile number - only allow digits and limit to 10
+        if (name === 'mobileNumber') {
+            const numericValue = value.replace(/\D/g, '').slice(0, 10);
+            setFormData(prev => ({
+                ...prev,
+                [name]: numericValue
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
+
         // Clear error for this field
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: '' }));
@@ -468,6 +484,8 @@ const ProfilePage = ({ user }) => {
                                     onChange={handleInputChange}
                                     className={errors.name ? 'error' : ''}
                                     placeholder="Enter your full name"
+                                    minLength="3"
+                                    maxLength="50"
                                     disabled={loading}
                                 />
                                 {errors.name && <span className="error-text">{errors.name}</span>}
@@ -524,7 +542,8 @@ const ProfilePage = ({ user }) => {
                                     className={errors.mobileNumber ? 'error' : ''}
                                     placeholder="Enter 10-digit mobile number"
                                     maxLength="10"
-                                    pattern="[0-9]{10}"
+                                    pattern="[6-9][0-9]{9}"
+                                    title="Please enter a valid 10-digit mobile number starting with 6-9"
                                     disabled={loading}
                                 />
                                 {errors.mobileNumber && <span className="error-text">{errors.mobileNumber}</span>}
