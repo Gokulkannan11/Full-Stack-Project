@@ -24,6 +24,17 @@ const DaycareBookingSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  email: {
+    type: String,
+    required: true,
+    trim: true,
+    lowercase: true
+  },
+  mobileNumber: {
+    type: String,
+    required: true,
+    trim: true
+  },
   startDate: {
     type: Date,
     required: true

@@ -12,7 +12,7 @@ const BookingsPage = ({ user }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [sortBy, setSortBy] = useState('createdAt-desc');
   const [accessoriesSortBy, setAccessoriesSortBy] = useState('createdAt-desc');
-  
+
   // Edit modal state for daycare
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingBooking, setEditingBooking] = useState(null);
@@ -20,6 +20,8 @@ const BookingsPage = ({ user }) => {
     petName: '',
     petType: '',
     petAge: '',
+    email: '',
+    mobileNumber: '',
     startDate: '',
     endDate: '',
     specialInstructions: ''
@@ -183,6 +185,8 @@ const BookingsPage = ({ user }) => {
       petName: booking.petName,
       petType: booking.petType,
       petAge: booking.petAge,
+      email: booking.email || '',
+      mobileNumber: booking.mobileNumber || '',
       startDate: new Date(booking.startDate).toISOString().split('T')[0],
       endDate: new Date(booking.endDate).toISOString().split('T')[0],
       specialInstructions: booking.specialInstructions || ''
@@ -373,7 +377,7 @@ const BookingsPage = ({ user }) => {
 
     try {
       setLoading(true);
-      
+
       const updateData = {
         personalInfo: {
           fullName: adoptionFormData.fullName,
@@ -614,6 +618,14 @@ const BookingsPage = ({ user }) => {
                           <span className="detail-value">{booking.petType}</span>
                         </div>
                         <div className="detail-row">
+                          <span className="detail-label">Email:</span>
+                          <span className="detail-value">{booking.email || 'N/A'}</span>
+                        </div>
+                        <div className="detail-row">
+                          <span className="detail-label">Mobile:</span>
+                          <span className="detail-value">{booking.mobileNumber || 'N/A'}</span>
+                        </div>
+                        <div className="detail-row">
                           <span className="detail-label">Location:</span>
                           <span className="detail-value">{booking.daycareCenter?.location || 'N/A'}</span>
                         </div>
@@ -640,7 +652,7 @@ const BookingsPage = ({ user }) => {
                           <span className="detail-value">{formatDate(booking.createdAt)}</span>
                         </div>
                       </div>
-                      
+
                       <div className="booking-actions">
                         {booking.status !== 'cancelled' && booking.status !== 'completed' && (
                           <>
@@ -740,7 +752,7 @@ const BookingsPage = ({ user }) => {
                           <span className="detail-value">{formatDate(order.createdAt)}</span>
                         </div>
                       </div>
-                      
+
                       <div className="booking-actions">
                         {order.status !== 'cancelled' && order.status !== 'delivered' && order.status !== 'shipped' && (
                           <>
@@ -942,6 +954,37 @@ const BookingsPage = ({ user }) => {
 
                 <div className="form-row">
                   <div className="form-group">
+                    <label>Email Address *</label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={editFormData.email}
+                      onChange={handleEditFormChange}
+                      required
+                      disabled={loading}
+                      placeholder="Enter email address"
+                      pattern="[^\s@]+@[^\s@]+\.[^\s@]+"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Mobile Number *</label>
+                    <input
+                      type="tel"
+                      name="mobileNumber"
+                      value={editFormData.mobileNumber}
+                      onChange={handleEditFormChange}
+                      required
+                      disabled={loading}
+                      placeholder="Enter 10-digit mobile number"
+                      pattern="[6-9]\d{9}"
+                      maxLength="10"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
                     <label>Start Date *</label>
                     <input
                       type="date"
@@ -1023,7 +1066,7 @@ const BookingsPage = ({ user }) => {
               </div>
               <form onSubmit={handleAddressFormSubmit} className="edit-form">
                 <h3>Shipping Information</h3>
-                
+
                 <div className="form-row">
                   <div className="form-group">
                     <label>Full Name *</label>
@@ -1152,7 +1195,7 @@ const BookingsPage = ({ user }) => {
               </div>
               <form onSubmit={handleAdoptionFormSubmit} className="edit-form">
                 <h3>Personal Information</h3>
-                
+
                 <div className="form-row">
                   <div className="form-group">
                     <label>Full Name *</label>

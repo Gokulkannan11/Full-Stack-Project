@@ -19,7 +19,10 @@ const ProductOrderSchema = new mongoose.Schema({
     address: String,
     city: String,
     state: String,
-    zipCode: String
+    zipCode: {
+      type: String,
+      match: [/^\d{6}$/, 'ZIP Code must be exactly 6 digits']
+    }
   },
   paymentInfo: {
     cardNumber: String,

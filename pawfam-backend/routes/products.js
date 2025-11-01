@@ -15,6 +15,14 @@ router.post('/orders', auth, async (req, res) => {
       });
     }
 
+    // Validate zip code format (must be numeric and exactly 6 digits)
+    if (!/^\d{6}$/.test(shippingAddress.zipCode)) {
+      return res.status(400).json({
+        message: 'ZIP Code must be exactly 6 digits',
+        errors: [{ param: 'shippingAddress.zipCode', msg: 'ZIP Code must be exactly 6 digits' }]
+      });
+    }
+
     const order = new ProductOrder({
       user: req.user._id,
       items,
@@ -100,6 +108,14 @@ router.put('/orders/:id/address', auth, async (req, res) => {
         !shippingAddress.state || !shippingAddress.zipCode) {
       return res.status(400).json({
         message: 'Please provide complete shipping address'
+      });
+    }
+
+    // Validate zip code format (must be numeric and exactly 6 digits)
+    if (!/^\d{6}$/.test(shippingAddress.zipCode)) {
+      return res.status(400).json({
+        message: 'ZIP Code must be exactly 6 digits',
+        errors: [{ param: 'shippingAddress.zipCode', msg: 'ZIP Code must be exactly 6 digits' }]
       });
     }
 

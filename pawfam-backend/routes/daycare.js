@@ -11,6 +11,8 @@ router.post('/bookings', auth, async (req, res) => {
       petName,
       petType,
       petAge,
+      email,
+      mobileNumber,
       startDate,
       endDate,
       specialInstructions,
@@ -18,9 +20,9 @@ router.post('/bookings', auth, async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!daycareCenter || !petName || !petType || !petAge || !startDate || !endDate || !totalAmount) {
+    if (!daycareCenter || !petName || !petType || !petAge || !email || !mobileNumber || !startDate || !endDate || !totalAmount) {
       return res.status(400).json({
-        message: 'Please provide all required fields'
+        message: 'Please provide all required fields including email and mobile number'
       });
     }
 
@@ -30,6 +32,8 @@ router.post('/bookings', auth, async (req, res) => {
       petName,
       petType,
       petAge,
+      email,
+      mobileNumber,
       startDate: new Date(startDate),
       endDate: new Date(endDate),
       specialInstructions: specialInstructions || '',
@@ -47,6 +51,8 @@ router.post('/bookings', auth, async (req, res) => {
         petName: booking.petName,
         petType: booking.petType,
         petAge: booking.petAge,
+        email: booking.email,
+        mobileNumber: booking.mobileNumber,
         startDate: booking.startDate,
         endDate: booking.endDate,
         specialInstructions: booking.specialInstructions,
@@ -82,7 +88,9 @@ router.get('/bookings', auth, async (req, res) => {
         { 'daycareCenter.name': searchRegex },
         { 'daycareCenter.location': searchRegex },
         { specialInstructions: searchRegex },
-        { status: searchRegex }
+        { status: searchRegex },
+        { email: searchRegex },
+        { mobileNumber: searchRegex }
       ];
     }
 
@@ -129,6 +137,8 @@ router.put('/bookings/:id', auth, async (req, res) => {
       petName,
       petType,
       petAge,
+      email,
+      mobileNumber,
       startDate,
       endDate,
       specialInstructions
@@ -164,6 +174,8 @@ router.put('/bookings/:id', auth, async (req, res) => {
     if (petName) booking.petName = petName;
     if (petType) booking.petType = petType;
     if (petAge) booking.petAge = petAge;
+    if (email) booking.email = email;
+    if (mobileNumber) booking.mobileNumber = mobileNumber;
     if (startDate) booking.startDate = new Date(startDate);
     if (endDate) booking.endDate = new Date(endDate);
     if (specialInstructions !== undefined) booking.specialInstructions = specialInstructions;

@@ -46,7 +46,8 @@ const vendorSchema = new mongoose.Schema({
     },
     zipCode: {
       type: String,
-      required: true
+      required: true,
+      match: [/^\d{6}$/, 'ZIP Code must be exactly 6 digits']
     },
     coordinates: {
       lat: Number,
