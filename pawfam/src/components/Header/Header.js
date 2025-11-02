@@ -19,10 +19,17 @@ const Header = ({ onNavigate, isLoggedIn, onLogout, user }) => {
           </button>
         </div>
         <div className={`nav-links ${menuOpen ? 'nav-links-open' : ''}`}>
-          <a href="#" className="nav-link" onClick={() => onNavigate('landing')}>Home</a>
-          <a href="#" className="nav-link" onClick={() => onNavigate('services')}>Centers</a>
-          <a href="#" className="nav-link" onClick={() => onNavigate('accessories')}>Accessories</a>
-          <a href="#" className="nav-link" onClick={() => onNavigate('adoption')}>Adoption</a>
+          {/* Customer Navigation */}
+          {(!isLoggedIn || user?.role === 'customer') && (
+            <>
+              <a href="#" className="nav-link" onClick={() => onNavigate('landing')}>Home</a>
+              <a href="#" className="nav-link" onClick={() => onNavigate('services')}>Centers</a>
+              <a href="#" className="nav-link" onClick={() => onNavigate('accessories')}>Accessories</a>
+              <a href="#" className="nav-link" onClick={() => onNavigate('adoption')}>Adoption</a>
+            </>
+          )}
+
+          {/* Vendor Navigation */}
           {isLoggedIn && user?.role === 'vendor' && (
             <>
               <a href="#" className="nav-link" onClick={() => onNavigate('vendor-dashboard')}>Dashboard</a>
@@ -32,15 +39,16 @@ const Header = ({ onNavigate, isLoggedIn, onLogout, user }) => {
               <a href="#" className="nav-link" onClick={() => onNavigate('vendor-profile')}>Profile</a>
             </>
           )}
+
+          {/* Customer-specific links when logged in */}
           {isLoggedIn && user?.role === 'customer' && (
-            <a href="#" className="nav-link" onClick={() => onNavigate('bookings')}>Bookings</a>
+            <>
+              <a href="#" className="nav-link" onClick={() => onNavigate('bookings')}>Bookings</a>
+              <a href="#" className="nav-link" onClick={() => onNavigate('profile')}>Profile</a>
+            </>
           )}
-          {isLoggedIn && user?.role === 'customer' && (
-            <a href="#" className="nav-link" onClick={() => onNavigate('profile')}>Profile</a>
-          )}
-          {isLoggedIn && user?.role === 'vendor' && (
-            <a href="#" className="nav-link" onClick={() => onNavigate('vendor-profile')}>Profile</a>
-          )}
+
+          {/* Auth section */}
           {isLoggedIn ? (
             <div className="user-menu">
               <span className="user-greeting">

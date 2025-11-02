@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { daycareAPI, petsAPI, profileAPI } from '../../../services/api';
+import { daycareAPI, petsAPI, profileAPI, vendorDaycareAPI } from '../../../services/api';
 import './PetServicePage.css';
 
 const PetServicesPage = ({ user }) => {
@@ -17,12 +17,21 @@ const PetServicesPage = ({ user }) => {
   const [loading, setLoading] = useState(false);
   const [userPets, setUserPets] = useState([]);
   const [petsLoading, setPetsLoading] = useState(false);
-  const [bookingMode, setBookingMode] = useState(null); // 'existing' or 'manual'
+  const [bookingMode, setBookingMode] = useState(null);
   const [selectedPetId, setSelectedPetId] = useState('');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [userProfile, setUserProfile] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
+  
+  // NEW: State for daycare centers
+  const [daycareCenters, setDaycareCenters] = useState([]);
+  const [centersLoading, setCentersLoading] = useState(true);
+
+  // Fetch daycare centers on component mount
+  useEffect(() => {
+    fetchDaycareCenters();
+  }, []);
 
   // Fetch user's pets and profile when component mounts
   useEffect(() => {
@@ -40,6 +49,20 @@ const PetServicesPage = ({ user }) => {
 
     return () => clearTimeout(timer);
   }, [searchKeyword]);
+
+  // NEW: Fetch daycare centers from API
+  const fetchDaycareCenters = async () => {
+    try {
+      setCentersLoading(true);
+      const data = await vendorDaycareAPI.getCenters();
+      setDaycareCenters(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error fetching daycare centers:', error);
+      setDaycareCenters([]);
+    } finally {
+      setCentersLoading(false);
+    }
+  };
 
   const fetchUserPets = async () => {
     try {
@@ -59,14 +82,12 @@ const PetServicesPage = ({ user }) => {
       const data = await profileAPI.getProfile();
       if (data.hasProfile && data.profile) {
         setUserProfile(data.profile);
-        // Auto-fill email and mobile from profile
         setBookingData(prev => ({
           ...prev,
           email: user?.email || '',
           mobileNumber: data.profile.mobileNumber || ''
         }));
       } else {
-        // If no profile, just set email from user
         setBookingData(prev => ({
           ...prev,
           email: user?.email || ''
@@ -74,7 +95,6 @@ const PetServicesPage = ({ user }) => {
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
-      // Fallback to user email
       setBookingData(prev => ({
         ...prev,
         email: user?.email || ''
@@ -88,14 +108,12 @@ const PetServicesPage = ({ user }) => {
   };
 
   const validateMobileNumber = (mobile) => {
-    // Indian mobile number validation: 10 digits, optionally starting with +91 or 91
     const mobileRegex = /^(\+91|91)?[6-9]\d{9}$/;
     return mobileRegex.test(mobile.replace(/\s/g, ''));
   };
 
   const handleMobileNumberChange = (e) => {
     const value = e.target.value;
-    // Only allow numeric input and limit to 10 digits
     const numericValue = value.replace(/\D/g, '').slice(0, 10);
     setBookingData({ ...bookingData, mobileNumber: numericValue });
     if (validationErrors.mobileNumber) {
@@ -133,15 +151,12 @@ const PetServicesPage = ({ user }) => {
         petType: selectedPet.category,
         petAge: selectedPet.age.toString()
       });
-      // Automatically move to form after selection
-      // The form will show with auto-filled values
     }
   };
 
   const handleModeSelection = (mode) => {
     setBookingMode(mode);
     if (mode === 'manual') {
-      // Reset form for manual entry but keep email and mobile
       setBookingData({
         petName: '',
         petType: '',
@@ -162,7 +177,6 @@ const PetServicesPage = ({ user }) => {
     setBookingMode(null);
     setSelectedPetId('');
     setValidationErrors({});
-    // Reset form but keep auto-filled email and mobile
     const emailToKeep = user?.email || '';
     const mobileToKeep = userProfile?.mobileNumber || '';
     setBookingData({
@@ -177,28 +191,6 @@ const PetServicesPage = ({ user }) => {
     });
   };
 
-  // Mock data - replace with actual API call
-  const daycareCenters = [
-    {
-      id: 1,
-      name: 'Happy Paws Daycare',
-      location: 'Peelamedu, Coimbatore',
-      rating: 4.5,
-      pricePerDay: 35,
-      services: ['Day Care', 'Overnight Stay', 'Grooming'],
-      availability: ['2024-01-15', '2024-01-16', '2024-01-17']
-    },
-    {
-      id: 2,
-      name: 'Pet Paradise Center',
-      location: 'Singanallur, Coimbatore',
-      rating: 4.8,
-      pricePerDay: 45,
-      services: ['Day Care', 'Training', 'Vet Services'],
-      availability: ['2024-01-15', '2024-01-18', '2024-01-19']
-    }
-  ];
-
   // Filter daycare centers based on search keyword
   const filteredCenters = daycareCenters.filter(center => {
     if (!debouncedSearch) return true;
@@ -207,7 +199,9 @@ const PetServicesPage = ({ user }) => {
     return (
       center.name.toLowerCase().includes(searchLower) ||
       center.location.toLowerCase().includes(searchLower) ||
-      center.services.some(service => service.toLowerCase().includes(searchLower))
+      center.city?.toLowerCase().includes(searchLower) ||
+      center.description?.toLowerCase().includes(searchLower) ||
+      center.services?.some(service => service.toLowerCase().includes(searchLower))
     );
   });
 
@@ -219,7 +213,6 @@ const PetServicesPage = ({ user }) => {
       return;
     }
 
-    // Validate form
     if (!validateForm()) {
       return;
     }
@@ -292,47 +285,66 @@ const PetServicesPage = ({ user }) => {
         )}
       </div>
 
-      <div className="centers-grid">
-        {filteredCenters.length === 0 ? (
-          <div className="no-results">
-            <p>No daycare centers found matching "{debouncedSearch}"</p>
-            <button onClick={() => setSearchKeyword('')}>Clear Search</button>
-          </div>
-        ) : (
-          filteredCenters.map(center => (
-            <div key={center.id} className="center-card">
-              <div className="center-image">
-                <img src={`https://placehold.co/300x200/3b82f6/ffffff?text=${encodeURIComponent(center.name)}`} alt={center.name} />
-              </div>
-              <div className="center-info">
-                <h3>{center.name}</h3>
-                <p className="center-location">{center.location}</p>
-                <div className="center-rating">
-                  <span className="rating">⭐ {center.rating}</span>
-                  <span className="price">₹{center.pricePerDay}/day</span>
-                </div>
-                <div className="center-services">
-                  <strong>Services:</strong>
-                  <div className="service-tags">
-                    {center.services.map(service => (
-                      <span key={service} className="service-tag">{service}</span>
-                    ))}
-                  </div>
-                </div>
-                <button
-                  className="book-btn"
-                  onClick={() => setSelectedCenter(center)}
-                  disabled={!user}
-                >
-                  {user ? 'Book Now' : 'Login to Book'}
-                </button>
-              </div>
+      {centersLoading ? (
+        <div className="loading-spinner">Loading daycare centers...</div>
+      ) : (
+        <div className="centers-grid">
+          {filteredCenters.length === 0 ? (
+            <div className="no-results">
+              <p>No daycare centers found {debouncedSearch && `matching "${debouncedSearch}"`}</p>
+              {debouncedSearch && <button onClick={() => setSearchKeyword('')}>Clear Search</button>}
             </div>
-          ))
-        )}
-      </div>
+          ) : (
+            filteredCenters.map(center => (
+              <div key={center._id} className="center-card">
+                <div className="center-image">
+                  <img 
+                    src={center.images && center.images.length > 0 
+                      ? center.images[0] 
+                      : `https://placehold.co/300x200/3b82f6/ffffff?text=${encodeURIComponent(center.name)}`
+                    } 
+                    alt={center.name} 
+                  />
+                </div>
+                <div className="center-info">
+                  <h3>{center.name}</h3>
+                  <p className="center-location">📍 {center.location}, {center.city}</p>
+                  <div className="center-rating">
+                    <span className="rating">⭐ {center.rating || 4.5}</span>
+                    <span className="price">₹{center.pricePerDay}/day</span>
+                  </div>
+                  {center.services && center.services.length > 0 && (
+                    <div className="center-services">
+                      <strong>Services:</strong>
+                      <div className="service-tags">
+                        {center.services.map((service, idx) => (
+                          <span key={idx} className="service-tag">{service}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {center.description && (
+                    <p className="center-description">{center.description.substring(0, 100)}...</p>
+                  )}
+                  <div className="center-details">
+                    <p><strong>Capacity:</strong> {center.capacity} pets</p>
+                    <p><strong>Hours:</strong> {center.operatingHours?.openTime} - {center.operatingHours?.closeTime}</p>
+                  </div>
+                  <button
+                    className="book-btn"
+                    onClick={() => setSelectedCenter(center)}
+                    disabled={!user}
+                  >
+                    {user ? 'Book Now' : 'Login to Book'}
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
 
-      {/* Booking Modal */}
+      {/* Booking Modal - Keep existing modal code */}
       {selectedCenter && (
         <div className="booking-modal">
           <div className="booking-form-container">
@@ -347,7 +359,6 @@ const PetServicesPage = ({ user }) => {
               </button>
             </div>
 
-            {/* Mode Selection */}
             {!bookingMode && (
               <div className="mode-selection">
                 <h3>Choose Booking Method</h3>
@@ -391,7 +402,6 @@ const PetServicesPage = ({ user }) => {
               </div>
             )}
 
-            {/* Existing Pets Selection */}
             {bookingMode === 'existing' && !selectedPetId && (
               <div className="pet-selection">
                 <div className="selection-header">
@@ -425,7 +435,6 @@ const PetServicesPage = ({ user }) => {
               </div>
             )}
 
-            {/* Booking Form */}
             {((bookingMode === 'existing' && selectedPetId) || bookingMode === 'manual') && (
               <div className="booking-form-wrapper">
                 <div className="selection-header">
@@ -453,7 +462,6 @@ const PetServicesPage = ({ user }) => {
                   </button>
                 </div>
                 <form onSubmit={handleBookingSubmit} className="booking-form">
-                  {/* Pet Details Form - Always shown with auto-filled values for existing pets */}
                   <div className="form-group">
                     <label>Pet Name *</label>
                     <input
@@ -522,14 +530,9 @@ const PetServicesPage = ({ user }) => {
                         disabled={loading}
                         placeholder="Enter your email"
                         className={validationErrors.email ? 'input-error' : ''}
-                        pattern="[^\s@]+@[^\s@]+\.[^\s@]+"
-                        title="Please enter a valid email address (e.g., user@example.com)"
                       />
                       {validationErrors.email && (
                         <small className="error-text">{validationErrors.email}</small>
-                      )}
-                      {!validationErrors.email && userProfile?.mobileNumber && (
-                        <small className="help-text">Auto-filled from profile (editable)</small>
                       )}
                     </div>
 
@@ -543,15 +546,10 @@ const PetServicesPage = ({ user }) => {
                         disabled={loading}
                         placeholder="Enter 10-digit mobile number"
                         className={validationErrors.mobileNumber ? 'input-error' : ''}
-                        pattern="[6-9]\d{9}"
                         maxLength="10"
-                        title="Please enter a valid 10-digit mobile number starting with 6-9"
                       />
                       {validationErrors.mobileNumber && (
                         <small className="error-text">{validationErrors.mobileNumber}</small>
-                      )}
-                      {!validationErrors.mobileNumber && userProfile?.mobileNumber && (
-                        <small className="help-text">Auto-filled from profile (editable)</small>
                       )}
                     </div>
                   </div>
