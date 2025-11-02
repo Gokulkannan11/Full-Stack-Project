@@ -1,60 +1,60 @@
-// Location: pawfam-backend/routes/vendorDaycare.js
+// Location: pawfam-backend/routes/vendorAdoption.js
 
 const express = require('express');
-const DaycareCenter = require('../models/DaycareCenter');
+const AdoptionPet = require('../models/AdoptionPet');
 const auth = require('../middleware/auth');
 const router = express.Router();
 
-// Get all daycare centers (public - for users)
-router.get('/centers', async (req, res) => {
+// Get all adoption pets (public - for users)
+router.get('/pets', async (req, res) => {
   try {
-    const centers = await DaycareCenter.find({ isActive: true })
+    const pets = await AdoptionPet.find({ isActive: true })
       .populate('vendor', 'username email')
       .sort({ createdAt: -1 });
     
-    res.json(centers);
+    res.json(pets);
   } catch (error) {
-    console.error('Get centers error:', error);
-    res.status(500).json({ message: 'Server error fetching centers' });
+    console.error('Get pets error:', error);
+    res.status(500).json({ message: 'Server error fetching pets' });
   }
 });
 
-// Get vendor's own daycare centers
-router.get('/my-centers', auth, async (req, res) => {
+// Get vendor's own adoption pets
+router.get('/my-pets', auth, async (req, res) => {
   try {
     if (req.user.role !== 'vendor') {
       return res.status(403).json({ message: 'Access denied. Vendor role required.' });
     }
 
-    const centers = await DaycareCenter.find({ vendor: req.user._id })
+    const pets = await AdoptionPet.find({ vendor: req.user._id })
       .sort({ createdAt: -1 });
     
-    res.json(centers);
+    res.json(pets);
   } catch (error) {
-    console.error('Get my centers error:', error);
-    res.status(500).json({ message: 'Server error fetching centers' });
+    console.error('Get my pets error:', error);
+    res.status(500).json({ message: 'Server error fetching pets' });
   }
 });
 
-// Get single center by ID
-router.get('/centers/:id', async (req, res) => {
+// Get single pet by ID
+router.get('/pets/:id', async (req, res) => {
   try {
-    const center = await DaycareCenter.findById(req.params.id)
+    const pet = await AdoptionPet.findById(req.params.id)
       .populate('vendor', 'username email');
     
-    if (!center) {
-      return res.status(404).json({ message: 'Center not found' });
+    if (!pet) {
+      return res.status(404).json({ message: 'Pet not found' });
     }
 
-    res.json(center);
+    res.json(pet);
   } catch (error) {
-    console.error('Get center error:', error);
-    res.status(500).json({ message: 'Server error fetching center' });
+    console.error('Get pet error:', error);
+    res.status(500).json({ message: 'Server error fetching pet' });
   }
 });
 
-// Create daycare center
-router.post('/centers', auth, async (req, res) => {
+// Create adoption pet
+router.post('/pets', auth, async (req, res) => {
   try {
     if (req.user.role !== 'vendor') {
       return res.status(403).json({ message: 'Access denied. Vendor role required.' });
@@ -62,158 +62,176 @@ router.post('/centers', auth, async (req, res) => {
 
     const {
       name,
-      location,
-      address,
-      city,
-      state,
-      zipCode,
-      phone,
-      email,
-      pricePerDay,
-      services,
-      petTypes,
-      facilities,
-      capacity,
+      type,
+      breed,
+      age,
+      gender,
+      size,
+      color,
       description,
-      operatingHours,
+      temperament,
+      healthStatus,
+      shelter,
+      adoptionFee,
+      specialNeeds,
+      goodWith,
       images
     } = req.body;
 
     // Validate required fields
-    if (!name || !location || !address || !city || !state || !zipCode || 
-        !phone || !email || !pricePerDay || !capacity || !description || !operatingHours) {
+    if (!name || !type || !breed || !age || !gender || !size || !color || 
+        !description || !shelter || adoptionFee === undefined) {
       return res.status(400).json({ message: 'Please provide all required fields' });
     }
 
-    const center = new DaycareCenter({
+    // Validate shelter information
+    if (!shelter.name || !shelter.location || !shelter.address || 
+        !shelter.phone || !shelter.email) {
+      return res.status(400).json({ message: 'Please provide complete shelter information' });
+    }
+
+    const pet = new AdoptionPet({
       vendor: req.user._id,
       name,
-      location,
-      address,
-      city,
-      state,
-      zipCode,
-      phone,
-      email,
-      pricePerDay,
-      services: services || [],
-      petTypes: petTypes || [],
-      facilities: facilities || [],
-      capacity,
+      type,
+      breed,
+      age,
+      gender,
+      size,
+      color,
       description,
-      operatingHours,
+      temperament: temperament || [],
+      healthStatus: healthStatus || {
+        vaccinated: false,
+        neutered: false,
+        healthConditions: 'Healthy'
+      },
+      shelter: {
+        name: shelter.name,
+        location: shelter.location,
+        address: shelter.address,
+        phone: shelter.phone,
+        email: shelter.email
+      },
+      adoptionFee,
+      specialNeeds: specialNeeds || 'None',
+      goodWith: goodWith || {
+        kids: true,
+        dogs: true,
+        cats: true
+      },
       images: images || []
     });
 
-    await center.save();
+    await pet.save();
 
     res.status(201).json({
-      message: 'Daycare center created successfully',
-      center
+      message: 'Adoption pet created successfully',
+      pet
     });
   } catch (error) {
-    console.error('Create center error:', error);
+    console.error('Create pet error:', error);
     if (error.name === 'ValidationError') {
       return res.status(400).json({ message: error.message });
     }
-    res.status(500).json({ message: 'Server error creating center' });
+    res.status(500).json({ message: 'Server error creating pet' });
   }
 });
 
-// Update daycare center
-router.put('/centers/:id', auth, async (req, res) => {
+// Update adoption pet
+router.put('/pets/:id', auth, async (req, res) => {
   try {
     if (req.user.role !== 'vendor') {
       return res.status(403).json({ message: 'Access denied. Vendor role required.' });
     }
 
-    const center = await DaycareCenter.findOne({
+    const pet = await AdoptionPet.findOne({
       _id: req.params.id,
       vendor: req.user._id
     });
 
-    if (!center) {
-      return res.status(404).json({ message: 'Center not found or unauthorized' });
+    if (!pet) {
+      return res.status(404).json({ message: 'Pet not found or unauthorized' });
     }
 
     const {
       name,
-      location,
-      address,
-      city,
-      state,
-      zipCode,
-      phone,
-      email,
-      pricePerDay,
-      services,
-      petTypes,
-      facilities,
-      capacity,
+      type,
+      breed,
+      age,
+      gender,
+      size,
+      color,
       description,
-      operatingHours,
-      images
+      temperament,
+      healthStatus,
+      shelter,
+      adoptionFee,
+      specialNeeds,
+      goodWith,
+      images,
+      status
     } = req.body;
 
     // Update fields
-    if (name) center.name = name;
-    if (location) center.location = location;
-    if (address) center.address = address;
-    if (city) center.city = city;
-    if (state) center.state = state;
-    if (zipCode) center.zipCode = zipCode;
-    if (phone) center.phone = phone;
-    if (email) center.email = email;
-    if (pricePerDay !== undefined) center.pricePerDay = pricePerDay;
-    if (services) center.services = services;
-    if (petTypes) center.petTypes = petTypes;
-    if (facilities) center.facilities = facilities;
-    if (capacity !== undefined) center.capacity = capacity;
-    if (description) center.description = description;
-    if (operatingHours) center.operatingHours = operatingHours;
-    if (images) center.images = images;
+    if (name) pet.name = name;
+    if (type) pet.type = type;
+    if (breed) pet.breed = breed;
+    if (age) pet.age = age;
+    if (gender) pet.gender = gender;
+    if (size) pet.size = size;
+    if (color) pet.color = color;
+    if (description) pet.description = description;
+    if (temperament) pet.temperament = temperament;
+    if (healthStatus) pet.healthStatus = { ...pet.healthStatus, ...healthStatus };
+    if (shelter) pet.shelter = { ...pet.shelter, ...shelter };
+    if (adoptionFee !== undefined) pet.adoptionFee = adoptionFee;
+    if (specialNeeds !== undefined) pet.specialNeeds = specialNeeds;
+    if (goodWith) pet.goodWith = { ...pet.goodWith, ...goodWith };
+    if (images) pet.images = images;
+    if (status) pet.status = status;
 
-    await center.save();
+    await pet.save();
 
     res.json({
-      message: 'Daycare center updated successfully',
-      center
+      message: 'Adoption pet updated successfully',
+      pet
     });
   } catch (error) {
-    console.error('Update center error:', error);
+    console.error('Update pet error:', error);
     if (error.name === 'ValidationError') {
       return res.status(400).json({ message: error.message });
     }
-    res.status(500).json({ message: 'Server error updating center' });
+    res.status(500).json({ message: 'Server error updating pet' });
   }
 });
 
-// Delete daycare center
-router.delete('/centers/:id', auth, async (req, res) => {
+// Delete adoption pet
+router.delete('/pets/:id', auth, async (req, res) => {
   try {
     if (req.user.role !== 'vendor') {
       return res.status(403).json({ message: 'Access denied. Vendor role required.' });
     }
 
-    const center = await DaycareCenter.findOneAndDelete({
+    const pet = await AdoptionPet.findOneAndDelete({
       _id: req.params.id,
       vendor: req.user._id
     });
 
-    if (!center) {
-      return res.status(404).json({ message: 'Center not found or unauthorized' });
+    if (!pet) {
+      return res.status(404).json({ message: 'Pet not found or unauthorized' });
     }
 
     res.json({
-      message: 'Daycare center deleted successfully',
-      deletedCenter: {
-        id: center._id,
-        name: center.name
+      message: 'Adoption pet deleted successfully',
+      deletedPet: {
+        id: pet._id,
+        name: pet.name
       }
     });
   } catch (error) {
-    console.error('Delete center error:', error);
-    res.status(500).json({ message: 'Server error deleting center' });
+    console.error('Delete pet error:', error);
+    res.status(500).json({ message: 'Server error deleting pet' });
   }
 });
 
