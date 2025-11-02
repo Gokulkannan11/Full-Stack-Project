@@ -24,6 +24,11 @@ app.use('/api/daycare', require('./routes/daycare'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/adoption', require('./routes/adoption'));
 
+// Vendor-specific routes:
+app.use('/api/vendor/daycare', require('./routes/vendorDaycare'));
+app.use('/api/vendor/adoption', require('./routes/vendorAdoption'));
+app.use('/api/vendor/accessories', require('./routes/vendorAccessories'));
+
 // Health check route
 app.get('/api/health', (req, res) => {
   res.json({ message: 'PetFam API is running!' });

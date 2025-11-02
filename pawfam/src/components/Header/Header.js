@@ -23,6 +23,15 @@ const Header = ({ onNavigate, isLoggedIn, onLogout, user }) => {
           <a href="#" className="nav-link" onClick={() => onNavigate('services')}>Centers</a>
           <a href="#" className="nav-link" onClick={() => onNavigate('accessories')}>Accessories</a>
           <a href="#" className="nav-link" onClick={() => onNavigate('adoption')}>Adoption</a>
+          {isLoggedIn && user?.role === 'vendor' && (
+            <>
+              <a href="#" className="nav-link" onClick={() => onNavigate('vendor-dashboard')}>Dashboard</a>
+              <a href="#" className="nav-link" onClick={() => onNavigate('vendor-daycare')}>Daycare</a>
+              <a href="#" className="nav-link" onClick={() => onNavigate('vendor-adoption')}>Adoption</a>
+              <a href="#" className="nav-link" onClick={() => onNavigate('vendor-accessories')}>Accessories</a>
+              <a href="#" className="nav-link" onClick={() => onNavigate('vendor-profile')}>Profile</a>
+            </>
+          )}
           {isLoggedIn && user?.role === 'customer' && (
             <a href="#" className="nav-link" onClick={() => onNavigate('bookings')}>Bookings</a>
           )}

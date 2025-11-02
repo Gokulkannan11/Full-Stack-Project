@@ -9,6 +9,10 @@ import VendorLoginPage from './components/pages/VendorLoginPage/VendorLoginPage'
 import VendorSignUpPage from './components/pages/VendorSignUpPage/VendorSignUpPage';
 import ForgotPasswordPage from './components/pages/ForgotPasswordPage/ForgotPasswordPage';
 import PetServicesPage from './components/pages/PetServicesPage/PetServicePage';
+import VendorDashboard from './components/pages/VendorDashboard/VendorDashboard';
+import VendorDaycarePage from './components/pages/VendorDaycarePage/VendorDaycarePage';
+import VendorAdoptionPage from './components/pages/VendorAdoptionPage/VendorAdoptionPage';
+import VendorAccessoriesPage from './components/pages/VendorAccessoriesPage/VendorAccessoriesPage';
 import AccessoriesPage from './components/pages/AccessoriesPage/AccessoriesPage';
 import AdoptionPage from './components/pages/AdoptionPage/AdoptionPage';
 import ProfilePage from './components/pages/ProfilePage/ProfilePage';
@@ -74,7 +78,7 @@ const App = () => {
   const handleVendorLogin = (data) => {
     setIsLoggedIn(true);
     setUser(data.user);
-    setCurrentPage('landing');
+    setCurrentPage('vendor-dashboard'); // Changed from 'landing'
     showModal('Vendor Login Successful', `Welcome back, ${data.user.username}!`);
   };
 
@@ -82,7 +86,7 @@ const App = () => {
   const handleVendorSignup = (data) => {
     setIsLoggedIn(true);
     setUser(data.user);
-    setCurrentPage('landing');
+    setCurrentPage('vendor-dashboard'); // Changed from 'landing'
     showModal('Vendor Account Created', `Welcome to PawFam, ${data.user.username}!`);
   };
 
@@ -115,6 +119,14 @@ const App = () => {
         return <ForgotPasswordPage onNavigate={setCurrentPage} />;
       case 'profile':
         return <ProfilePage user={user} />;
+      case 'vendor-dashboard':
+        return <VendorDashboard user={user} />;
+      case 'vendor-daycare':
+        return <VendorDaycarePage user={user} />;
+      case 'vendor-adoption':
+        return <VendorAdoptionPage user={user} />;
+      case 'vendor-accessories':
+        return <VendorAccessoriesPage user={user} />;
       case 'vendor-profile':
         return <VendorProfilePage user={user} />;
       case 'services':

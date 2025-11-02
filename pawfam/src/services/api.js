@@ -80,6 +80,10 @@ export const daycareAPI = {
     const response = await API.delete(`/daycare/bookings/${bookingId}`);
     return response.data;
   },
+  updateBookingStatus: async (bookingId, status) => {
+    const response = await API.patch(`/daycare/bookings/${bookingId}/status`, { status });
+    return response.data;
+  },
 };
 
 // Products API
@@ -104,6 +108,10 @@ export const productsAPI = {
     const response = await API.delete(`/products/orders/${orderId}`);
     return response.data;
   },
+  updateOrderStatus: async (orderId, status) => {
+    const response = await API.patch(`/products/orders/${orderId}/status`, { status });
+    return response.data;
+  },
 };
 
 // Adoption API
@@ -126,6 +134,82 @@ export const adoptionAPI = {
   },
   deleteApplication: async (applicationId) => {
     const response = await API.delete(`/adoption/applications/${applicationId}`);
+    return response.data;
+  },
+  updateApplicationStatus: async (applicationId, status) => {
+    const response = await API.patch(`/adoption/applications/${applicationId}/status`, { status });
+    return response.data;
+  }
+};
+
+// Vendor Daycare API
+export const vendorDaycareAPI = {
+  getCenters: async () => {
+    const response = await API.get('/vendor/daycare/centers');
+    return response.data;
+  },
+  getMyCenters: async () => {
+    const response = await API.get('/vendor/daycare/my-centers');
+    return response.data;
+  },
+  createCenter: async (centerData) => {
+    const response = await API.post('/vendor/daycare/centers', centerData);
+    return response.data;
+  },
+  updateCenter: async (centerId, centerData) => {
+    const response = await API.put(`/vendor/daycare/centers/${centerId}`, centerData);
+    return response.data;
+  },
+  deleteCenter: async (centerId) => {
+    const response = await API.delete(`/vendor/daycare/centers/${centerId}`);
+    return response.data;
+  },
+};
+
+// Vendor Adoption API
+export const vendorAdoptionAPI = {
+  getPets: async () => {
+    const response = await API.get('/vendor/adoption/pets');
+    return response.data;
+  },
+  getMyPets: async () => {
+    const response = await API.get('/vendor/adoption/my-pets');
+    return response.data;
+  },
+  createPet: async (petData) => {
+    const response = await API.post('/vendor/adoption/pets', petData);
+    return response.data;
+  },
+  updatePet: async (petId, petData) => {
+    const response = await API.put(`/vendor/adoption/pets/${petId}`, petData);
+    return response.data;
+  },
+  deletePet: async (petId) => {
+    const response = await API.delete(`/vendor/adoption/pets/${petId}`);
+    return response.data;
+  },
+};
+
+// Vendor Accessories API
+export const vendorAccessoriesAPI = {
+  getProducts: async () => {
+    const response = await API.get('/vendor/accessories/products');
+    return response.data;
+  },
+  getMyProducts: async () => {
+    const response = await API.get('/vendor/accessories/my-products');
+    return response.data;
+  },
+  createProduct: async (productData) => {
+    const response = await API.post('/vendor/accessories/products', productData);
+    return response.data;
+  },
+  updateProduct: async (productId, productData) => {
+    const response = await API.put(`/vendor/accessories/products/${productId}`, productData);
+    return response.data;
+  },
+  deleteProduct: async (productId) => {
+    const response = await API.delete(`/vendor/accessories/products/${productId}`);
     return response.data;
   },
 };

@@ -1,5 +1,5 @@
 import heapq
-class UnionFind:
+class Union:
 
 
 
@@ -41,42 +41,42 @@ class UnionFind:
         return True
 
 
-def kruskal(edges, n):
-    # initialize the variables
+def kruskal(n, edges):
+
+    #initialze the variables
     total_weight = 0
     min_heap = []
+    uf = Union(n)
     mst_edges = []
-    uf = UnionFind(n)
 
-    # sample input: list of tuples (u, v, weight) in adjacency list format
-    dist = edges
+    dist=edges
 
-
-    for (u, v, weight) in dist:
-
-
+    for u, v, weight in dist:
         heapq.heappush(min_heap, (weight, u, v))
 
-    
+    #min heap prepared
+    #for weight, u, v in min_heap:
+    #   if uf.find(u) != uf.find(v):
+    #       uf.union(u, v)
+            #continue
 
-    
-    while min_heap and len(mst_edges) < n - 1:
 
+    for _ in range(len(min_heap)):
         weight, u, v = heapq.heappop(min_heap)
+        heap = (u,v,weight)
         if uf.union(u, v):
-
-            mst_edges.append((u, v, weight))
             total_weight += weight
+            mst_edges.append(heap)
 
-    return mst_edges, total_weight
-
+    return total_weight, mst_edges
 
 edges = [(1, 2, 1), (2, 3, 2), (2, 4, 4), (1, 4, 5), (1, 3, 3)]
 n = 4
 
-mst, cost = kruskal(edges, n)
+cost, mst = kruskal(n, edges)
 
 for edge in mst:
     print(edge)
 
 print("Total minimum cost:", cost)
+    
